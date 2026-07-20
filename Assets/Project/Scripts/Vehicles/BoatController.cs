@@ -23,22 +23,14 @@ namespace LittleTrawling.Vehicles
 
         private Rigidbody _rb;
         private bool _piloting;
+        private float _currentSpeed;
 
         public Vector3 ForwardDirection => transform.TransformDirection(forwardAxis.normalized);
 
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
-
-            // Very simple physics for the prototype.
-            _rb.useGravity = false;
-            _rb.constraints = RigidbodyConstraints.FreezePositionY
-                            | RigidbodyConstraints.FreezeRotationX
-                            | RigidbodyConstraints.FreezeRotationZ;
-
-            // Damping settings for coasting when you release the throttle.
-            _rb.linearDamping = 1.2f;
-            _rb.angularDamping = 4f;
+            _rb.isKinematic = true;
         }
 
         private void Start()
@@ -63,26 +55,22 @@ namespace LittleTrawling.Vehicles
 
         private void FixedUpdate()
         {
-            if (!_piloting || InputReader.Instance == null) return;
+            Vector2 input = _piloting && InputReader.Instance != null ? InputReader.Instance.MoveInput : Vector2.zero;
 
-            Vector2 input = InputReader.Instance.MoveInput;
-
-            Vector3 facing = ForwardDirection;
-
-            // Steering (can turn anytime regardless of speed)
-            if (Mathf.Abs(input.x) > 0.01f)
+            // Steering
+            if (_piloting && Mathf.Abs(input.x) > 0.01f)
             {
                 float turn = input.x * turnSpeed * Time.fixedDeltaTime;
                 _rb.MoveRotation(_rb.rotation * Quaternion.Euler(0f, turn, 0f));
             }
 
-            // Motorboat gradual acceleration and deceleration
-            float currentSpeed = Vector3.Dot(_rb.linearVelocity, facing);
+            // Accelerate gradually
             float targetSpeed = input.y * maxSpeed;
             float rate = Mathf.Abs(input.y) > 0.01f ? acceleration : deceleration;
-            float newSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, rate * Time.fixedDeltaTime);
+            _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.fixedDeltaTime);
 
-            _rb.linearVelocity = facing * newSpeed;
+            if (Mathf.Abs(_currentSpeed) > 0.0001f)
+                _rb.MovePosition(_rb.position + ForwardDirection * _currentSpeed * Time.fixedDeltaTime);
         }
     }
 }
