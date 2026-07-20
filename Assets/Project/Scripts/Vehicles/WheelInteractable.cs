@@ -13,6 +13,8 @@ namespace LittleTrawling.Vehicles
         [SerializeField] private Transform pilotAnchor;
         [Tooltip("Tag on the player avatar.")]
         [SerializeField] private string playerTag = "Player";
+        [Tooltip("Max distance to interact with the wheel if trigger detection is missed.")]
+        [SerializeField] private float maxInteractDistance = 2.5f;
 
         private PlayerController _player;
         private bool _playerInRange;
@@ -33,7 +35,7 @@ namespace LittleTrawling.Vehicles
         {
             if (!other.CompareTag(playerTag)) return;
             _playerInRange = true;
-            _player = other.GetComponentInParent<PlayerController>();
+            _player = other.GetComponentInParent<PlayerController>() ?? other.GetComponent<PlayerController>();
         }
 
         private void OnTriggerExit(Collider other)
@@ -55,10 +57,31 @@ namespace LittleTrawling.Vehicles
             }
 
             // Start steering
-            if (gm.IsState(GameState.Walking) && _playerInRange && _player != null)
+            if (gm.IsState(GameState.Walking))
             {
-                if (pilotAnchor != null) _player.SnapTo(pilotAnchor);
-                gm.SetState(GameState.Piloting);
+                if (_player == null)
+                {
+                    var playerObj = GameObject.FindGameObjectWithTag(playerTag);
+                    if (playerObj != null)
+                        _player = playerObj.GetComponentInParent<PlayerController>() ?? playerObj.GetComponent<PlayerController>();
+                }
+
+                bool canInteract = _playerInRange;
+
+                // Fallback distance check to ensure interaction works reliably
+                if (!canInteract && _player != null)
+                {
+                    Vector3 anchorPos = pilotAnchor != null ? pilotAnchor.position : transform.position;
+                    float dist = Vector3.Distance(_player.transform.position, anchorPos);
+                    if (dist <= maxInteractDistance)
+                        canInteract = true;
+                }
+
+                if (canInteract && _player != null)
+                {
+                    if (pilotAnchor != null) _player.SnapTo(pilotAnchor);
+                    gm.SetState(GameState.Piloting);
+                }
             }
         }
     }

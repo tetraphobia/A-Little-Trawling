@@ -18,9 +18,15 @@ namespace LittleTrawling.Vehicles
         [SerializeField] private float turnSpeed = 55f;
         [Tooltip("Boat only turns above this speed.")]
         [SerializeField] private float minSpeedToTurn = 0.4f;
+        [Tooltip("Local axis indicating the forward facing direction of the boat model.")]
+        [SerializeField] private Vector3 forwardAxis = Vector3.right;
+        [Tooltip("How strongly lateral drift is reduced while moving.")]
+        [SerializeField] private float lateralDamping = 3f;
 
         private Rigidbody _rb;
         private bool _piloting;
+
+        public Vector3 ForwardDirection => transform.TransformDirection(forwardAxis.normalized);
 
         private void Awake()
         {
@@ -66,15 +72,25 @@ namespace LittleTrawling.Vehicles
             Vector3 vel = _rb.linearVelocity;
             Vector3 flat = new Vector3(vel.x, 0f, vel.z);
 
+            Vector3 facing = ForwardDirection;
+
             // Throttle
             if (Mathf.Abs(input.y) > 0.01f && flat.magnitude < maxSpeed)
-                _rb.AddForce(transform.forward * (input.y * thrust), ForceMode.Force);
+                _rb.AddForce(facing * (input.y * thrust), ForceMode.Force);
 
             // Steering
             if (flat.magnitude > minSpeedToTurn && Mathf.Abs(input.x) > 0.01f)
             {
                 float turn = input.x * turnSpeed * Time.fixedDeltaTime;
                 _rb.MoveRotation(_rb.rotation * Quaternion.Euler(0f, turn, 0f));
+            }
+
+            // Damp lateral (sideways) velocity relative to boat facing direction so it turns naturally
+            if (flat.sqrMagnitude > 0.01f && lateralDamping > 0f)
+            {
+                Vector3 right = Vector3.Cross(Vector3.up, facing);
+                Vector3 lateralVel = Vector3.Project(flat, right);
+                _rb.AddForce(-lateralVel * (lateralDamping * Time.fixedDeltaTime), ForceMode.VelocityChange);
             }
         }
     }
