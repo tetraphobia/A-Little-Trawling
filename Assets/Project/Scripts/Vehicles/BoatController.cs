@@ -10,18 +10,16 @@ namespace LittleTrawling.Vehicles
     public class BoatController : MonoBehaviour
     {
         [Header("Movement")]
-        [Tooltip("Forward/backward push.")]
-        [SerializeField] private float thrust = 900f;
         [Tooltip("Max speed (m/s).")]
         [SerializeField] private float maxSpeed = 8f;
+        [Tooltip("Acceleration rate (m/s²).")]
+        [SerializeField] private float acceleration = 4f;
+        [Tooltip("Deceleration rate when releasing throttle (m/s²).")]
+        [SerializeField] private float deceleration = 3f;
         [Tooltip("Degrees per second turn speed.")]
         [SerializeField] private float turnSpeed = 55f;
-        [Tooltip("Boat only turns above this speed.")]
-        [SerializeField] private float minSpeedToTurn = 0.4f;
         [Tooltip("Local axis indicating the forward facing direction of the boat model.")]
         [SerializeField] private Vector3 forwardAxis = Vector3.right;
-        [Tooltip("How strongly lateral drift is reduced while moving.")]
-        [SerializeField] private float lateralDamping = 3f;
 
         private Rigidbody _rb;
         private bool _piloting;
@@ -69,29 +67,22 @@ namespace LittleTrawling.Vehicles
 
             Vector2 input = InputReader.Instance.MoveInput;
 
-            Vector3 vel = _rb.linearVelocity;
-            Vector3 flat = new Vector3(vel.x, 0f, vel.z);
-
             Vector3 facing = ForwardDirection;
 
-            // Throttle
-            if (Mathf.Abs(input.y) > 0.01f && flat.magnitude < maxSpeed)
-                _rb.AddForce(facing * (input.y * thrust), ForceMode.Force);
-
-            // Steering
-            if (flat.magnitude > minSpeedToTurn && Mathf.Abs(input.x) > 0.01f)
+            // Steering (can turn anytime regardless of speed)
+            if (Mathf.Abs(input.x) > 0.01f)
             {
                 float turn = input.x * turnSpeed * Time.fixedDeltaTime;
                 _rb.MoveRotation(_rb.rotation * Quaternion.Euler(0f, turn, 0f));
             }
 
-            // Damp lateral (sideways) velocity relative to boat facing direction so it turns naturally
-            if (flat.sqrMagnitude > 0.01f && lateralDamping > 0f)
-            {
-                Vector3 right = Vector3.Cross(Vector3.up, facing);
-                Vector3 lateralVel = Vector3.Project(flat, right);
-                _rb.AddForce(-lateralVel * (lateralDamping * Time.fixedDeltaTime), ForceMode.VelocityChange);
-            }
+            // Motorboat gradual acceleration and deceleration
+            float currentSpeed = Vector3.Dot(_rb.linearVelocity, facing);
+            float targetSpeed = input.y * maxSpeed;
+            float rate = Mathf.Abs(input.y) > 0.01f ? acceleration : deceleration;
+            float newSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, rate * Time.fixedDeltaTime);
+
+            _rb.linearVelocity = facing * newSpeed;
         }
     }
 }
