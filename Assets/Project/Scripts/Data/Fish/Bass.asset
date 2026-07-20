@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e75debfd6026fa64db9f8ea1db4ccdc9, type: 3}
   m_Name: Bass
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Data.Fish
-  displayName: New Fish
-  rarity: 0
+  displayName: Bass
+  rarity: 1
   minSize: 0.2
   maxSize: 0.6
   minWeight: 0.12
   maxWeight: 3.2
-  baseValue: 10
+  baseValue: 25
   minRodTier: 0
