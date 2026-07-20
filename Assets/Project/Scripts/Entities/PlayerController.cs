@@ -23,10 +23,17 @@ namespace LittleTrawling.Entities
         [SerializeField] private Vector2 deckBoundsZ = new Vector2(-0.6f, 0.6f);
 
         private CharacterController _cc;
+        private Rigidbody _boatRigidbody;
         private bool _active;
         private float _verticalVel;
+        private Vector3 _lastBoatPosition;
 
-        private void Awake() => _cc = GetComponent<CharacterController>();
+        private void Awake()
+        {
+            _cc = GetComponent<CharacterController>();
+            // Track the boat's movement so that the player will move along with it even when not piloting.
+            _boatRigidbody = GetComponentInParent<Rigidbody>();
+        }
 
         private void Start()
         {
@@ -44,11 +51,23 @@ namespace LittleTrawling.Entities
                 GameManager.Instance.StateChanged -= OnStateChanged;
         }
 
-        private void OnStateChanged(GameState state) => _active = state == GameState.Walking;
+        private void OnStateChanged(GameState state)
+        {
+            _active = state == GameState.Walking;
+            if (_active && _boatRigidbody != null)
+                _lastBoatPosition = _boatRigidbody.position;
+        }
 
         private void Update()
         {
             if (!_active || InputReader.Instance == null) return;
+
+            Vector3 boatDelta = Vector3.zero;
+            if (_boatRigidbody != null)
+            {
+                boatDelta = _boatRigidbody.position - _lastBoatPosition;
+                _lastBoatPosition = _boatRigidbody.position;
+            }
 
             Vector2 input = InputReader.Instance.MoveInput;
 
@@ -70,7 +89,7 @@ namespace LittleTrawling.Entities
             if (_cc.isGrounded && _verticalVel < 0f) _verticalVel = -2f;
             _verticalVel += gravity * Time.deltaTime;
 
-            _cc.Move((move + Vector3.up * _verticalVel) * Time.deltaTime);
+            _cc.Move((move + Vector3.up * _verticalVel) * Time.deltaTime + boatDelta);
 
             // Clamp local position so player remains on top of the boat deck
             if (restrictToDeck && transform.parent != null)
