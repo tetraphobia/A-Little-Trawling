@@ -14,7 +14,9 @@ namespace LittleTrawling.Core
         private GameInput _input;
 
         public Vector2 MoveInput { get; private set; }
+        public Vector2 LookInput { get; private set; }
         public bool CastHeld { get; private set; }
+        public bool CameraLookHeld { get; private set; }
 
         public event Action CastPressed;
         public event Action CastReleased;
@@ -36,25 +38,37 @@ namespace LittleTrawling.Core
             _input ??= new GameInput();
             _input.Gameplay.Enable();
 
-            _input.Gameplay.Move.performed     += OnMove;
-            _input.Gameplay.Move.canceled      += OnMove;
-            _input.Gameplay.Cast.performed     += OnCastDown;
-            _input.Gameplay.Cast.canceled      += OnCastUp;
-            _input.Gameplay.Interact.performed += OnInteract;
+            _input.Gameplay.Move.performed        += OnMove;
+            _input.Gameplay.Move.canceled          += OnMove;
+            _input.Gameplay.Look.performed         += OnLook;
+            _input.Gameplay.Look.canceled          += OnLook;
+            _input.Gameplay.CameraLook.performed   += OnCameraLookDown;
+            _input.Gameplay.CameraLook.canceled    += OnCameraLookUp;
+            _input.Gameplay.Cast.performed         += OnCastDown;
+            _input.Gameplay.Cast.canceled          += OnCastUp;
+            _input.Gameplay.Interact.performed     += OnInteract;
         }
 
         private void OnDisable()
         {
-            _input.Gameplay.Move.performed     -= OnMove;
-            _input.Gameplay.Move.canceled      -= OnMove;
-            _input.Gameplay.Cast.performed     -= OnCastDown;
-            _input.Gameplay.Cast.canceled      -= OnCastUp;
-            _input.Gameplay.Interact.performed -= OnInteract;
+            _input.Gameplay.Move.performed        -= OnMove;
+            _input.Gameplay.Move.canceled          -= OnMove;
+            _input.Gameplay.Look.performed         -= OnLook;
+            _input.Gameplay.Look.canceled          -= OnLook;
+            _input.Gameplay.CameraLook.performed   -= OnCameraLookDown;
+            _input.Gameplay.CameraLook.canceled    -= OnCameraLookUp;
+            _input.Gameplay.Cast.performed         -= OnCastDown;
+            _input.Gameplay.Cast.canceled          -= OnCastUp;
+            _input.Gameplay.Interact.performed     -= OnInteract;
 
             _input.Gameplay.Disable();
         }
 
         private void OnMove(InputAction.CallbackContext ctx) => MoveInput = ctx.ReadValue<Vector2>();
+        private void OnLook(InputAction.CallbackContext ctx) => LookInput = ctx.ReadValue<Vector2>();
+
+        private void OnCameraLookDown(InputAction.CallbackContext ctx) => CameraLookHeld = true;
+        private void OnCameraLookUp(InputAction.CallbackContext ctx) => CameraLookHeld = false;
 
         private void OnCastDown(InputAction.CallbackContext ctx)
         {

@@ -52,12 +52,16 @@ namespace LittleTrawling.Entities
 
             Vector2 input = InputReader.Instance.MoveInput;
 
-            // Convert stick input into a direction relative to the boat.
-            Vector3 local = new Vector3(input.x, 0f, input.y);
-            Vector3 planar = transform.parent != null
-                ? transform.parent.TransformDirection(local)
-                : local;
-            planar.y = 0f;
+            // Convert input into a direction relative to the camera.
+            Camera cam = Camera.main;
+            Vector3 camFwd = cam.transform.forward;
+            Vector3 camRight = cam.transform.right;
+            camFwd.y = 0f;
+            camRight.y = 0f;
+            camFwd.Normalize();
+            camRight.Normalize();
+
+            Vector3 planar = camRight * input.x + camFwd * input.y;
 
             Vector3 move = planar.sqrMagnitude > 1f ? planar.normalized : planar;
             move *= moveSpeed;
