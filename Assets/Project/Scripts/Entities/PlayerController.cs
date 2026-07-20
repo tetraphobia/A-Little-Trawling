@@ -14,6 +14,14 @@ namespace LittleTrawling.Entities
         [SerializeField] private float turnSpeed = 720f;
         [SerializeField] private float gravity = -20f;
 
+        [Header("Deck Boundaries")]
+        [Tooltip("If true, clamps the player's position to stay on the boat deck.")]
+        [SerializeField] private bool restrictToDeck = true;
+        [Tooltip("Local X bounds (min, max) relative to the parent.")]
+        [SerializeField] private Vector2 deckBoundsX = new Vector2(-1.1f, 1.1f);
+        [Tooltip("Local Z bounds (min, max) relative to the parent.")]
+        [SerializeField] private Vector2 deckBoundsZ = new Vector2(-0.6f, 0.6f);
+
         private CharacterController _cc;
         private bool _active;
         private float _verticalVel;
@@ -59,6 +67,18 @@ namespace LittleTrawling.Entities
             _verticalVel += gravity * Time.deltaTime;
 
             _cc.Move((move + Vector3.up * _verticalVel) * Time.deltaTime);
+
+            // Clamp local position so player remains on top of the boat deck
+            if (restrictToDeck && transform.parent != null)
+            {
+                Vector3 localPos = transform.localPosition;
+                float clampedX = Mathf.Clamp(localPos.x, deckBoundsX.x, deckBoundsX.y);
+                float clampedZ = Mathf.Clamp(localPos.z, deckBoundsZ.x, deckBoundsZ.y);
+                if (localPos.x != clampedX || localPos.z != clampedZ)
+                {
+                    transform.localPosition = new Vector3(clampedX, localPos.y, clampedZ);
+                }
+            }
 
             // Face the direction of travel.
             if (move.sqrMagnitude > 0.001f)
