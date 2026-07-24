@@ -16,8 +16,6 @@ namespace LittleTrawling.Vehicles
         [SerializeField] private string playerTag = "Player";
         [Tooltip("Max distance to interact with the wheel if trigger detection is missed.")]
         [SerializeField] private float maxInteractDistance = 2.5f;
-        [Tooltip("Max distance to dock if trigger detection is missed.")]
-        [SerializeField] private float maxDockDistance = 15f;
 
         private PlayerController _player;
         private BoatController _boatController;
@@ -63,20 +61,20 @@ namespace LittleTrawling.Vehicles
                 _boatController = GetComponentInParent<BoatController>() ?? GetComponent<BoatController>();
             }
 
-            // Stop steering (and dock if inside a docking zone or near a dock)
+            // Stop steering (and dock if inside a docking zone)
             if (gm.IsState(GameState.Piloting))
             {
                 if (_boatController != null)
                 {
                     Dock targetDock = _boatController.CurrentDockZone;
 
-                    // Fallback distance check if trigger collision was missed
-                    if (targetDock == null)
+                    // Fallback verify using bounds overlap if CurrentDockZone was missed
+                    if (targetDock == null || !targetDock.IsBoatInside(_boatController))
                     {
                         var docks = Object.FindObjectsByType<Dock>(FindObjectsSortMode.None);
                         foreach (var d in docks)
                         {
-                            if (Vector3.Distance(_boatController.transform.position, d.transform.position) <= maxDockDistance)
+                            if (d.IsBoatInside(_boatController))
                             {
                                 targetDock = d;
                                 break;
@@ -84,7 +82,7 @@ namespace LittleTrawling.Vehicles
                         }
                     }
 
-                    if (targetDock != null)
+                    if (targetDock != null && targetDock.IsBoatInside(_boatController))
                     {
                         _boatController.DockTo(targetDock);
                     }

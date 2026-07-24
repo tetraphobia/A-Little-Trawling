@@ -58,8 +58,6 @@ namespace LittleTrawling.Vehicles
                 {
                     _rb.position = targetBerth.position;
                     _rb.rotation = targetBerth.rotation;
-                    _rb.linearVelocity = Vector3.zero;
-                    _rb.angularVelocity = Vector3.zero;
                 }
                 Physics.SyncTransforms();
             }
