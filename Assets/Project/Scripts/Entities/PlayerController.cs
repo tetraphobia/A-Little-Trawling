@@ -1,5 +1,6 @@
 using UnityEngine;
 using LittleTrawling.Core;
+using LittleTrawling.Data;
 
 namespace LittleTrawling.Entities
 {
@@ -9,6 +10,10 @@ namespace LittleTrawling.Entities
     [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
     {
+        [Header("Equipment")]
+        [Tooltip("The equipped fishing rod.")]
+        [SerializeField] private Rod rod;
+
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 3.5f;
         [SerializeField] private float turnSpeed = 720f;
@@ -21,6 +26,12 @@ namespace LittleTrawling.Entities
         [SerializeField] private Vector2 deckBoundsX = new Vector2(-1.1f, 1.1f);
         [Tooltip("Local Z bounds (min, max) relative to the parent.")]
         [SerializeField] private Vector2 deckBoundsZ = new Vector2(-0.6f, 0.6f);
+
+        public Rod Rod
+        {
+            get => rod;
+            set => rod = value;
+        }
 
         private CharacterController _cc;
         private Rigidbody _boatRigidbody;

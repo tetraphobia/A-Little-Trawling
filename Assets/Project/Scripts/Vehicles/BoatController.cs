@@ -1,5 +1,7 @@
 using UnityEngine;
 using LittleTrawling.Core;
+using LittleTrawling.Data;
+using LittleTrawling.Environment;
 
 namespace LittleTrawling.Vehicles
 {
@@ -9,6 +11,10 @@ namespace LittleTrawling.Vehicles
     [RequireComponent(typeof(Rigidbody))]
     public class BoatController : MonoBehaviour
     {
+        [Header("Engine")]
+        [Tooltip("The equipped engine.")]
+        [SerializeField] private Engine engine;
+
         [Header("Movement")]
         [Tooltip("Max speed (m/s).")]
         [SerializeField] private float maxSpeed = 8f;
@@ -26,6 +32,43 @@ namespace LittleTrawling.Vehicles
         private float _currentSpeed;
 
         public Vector3 ForwardDirection => transform.TransformDirection(forwardAxis.normalized);
+
+        public Engine Engine
+        {
+            get => engine;
+            set => engine = value;
+        }
+
+        public float EffectiveMaxSpeed => maxSpeed * (engine != null ? engine.speedMultiplier : 1f);
+        public float EffectiveTurnSpeed => turnSpeed * (engine != null ? engine.maneuverabilityMultiplier : 1f);
+
+        public Dock CurrentDockZone { get; set; }
+        public bool IsDocked { get; private set; }
+
+        public void DockTo(Dock dock)
+        {
+            if (dock == null) return;
+            IsDocked = true;
+            _currentSpeed = 0f;
+            Transform targetBerth = dock.Berth;
+            if (targetBerth != null)
+            {
+                transform.SetPositionAndRotation(targetBerth.position, targetBerth.rotation);
+                if (_rb != null)
+                {
+                    _rb.position = targetBerth.position;
+                    _rb.rotation = targetBerth.rotation;
+                    _rb.linearVelocity = Vector3.zero;
+                    _rb.angularVelocity = Vector3.zero;
+                }
+                Physics.SyncTransforms();
+            }
+        }
+
+        public void Undock()
+        {
+            IsDocked = false;
+        }
 
         private void Awake()
         {
@@ -60,12 +103,12 @@ namespace LittleTrawling.Vehicles
             // Steering
             if (_piloting && Mathf.Abs(input.x) > 0.01f)
             {
-                float turn = input.x * turnSpeed * Time.fixedDeltaTime;
+                float turn = input.x * EffectiveTurnSpeed * Time.fixedDeltaTime;
                 _rb.MoveRotation(_rb.rotation * Quaternion.Euler(0f, turn, 0f));
             }
 
             // Accelerate gradually
-            float targetSpeed = input.y * maxSpeed;
+            float targetSpeed = input.y * EffectiveMaxSpeed;
             float rate = Mathf.Abs(input.y) > 0.01f ? acceleration : deceleration;
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.fixedDeltaTime);
 
