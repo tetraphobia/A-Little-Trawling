@@ -33169,13 +33169,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Vehicles.BoatController
   engine: {fileID: 11400000, guid: 2dc80825600eeaa4487a03b3b043f46f, type: 2}
-  maxSpeed: 8
-  acceleration: 4
-  deceleration: 3
-  turnSpeed: 55
   forwardAxis: {x: 1, y: 0, z: 0}
   autoDockOnStart: 1
-  startingDock: {fileID: 0}
+  startingDock: {fileID: 411917995}
   landCollisionRadius: 0.8
   landCheckDistance: 0.5
 --- !u!1660057539 &9223372036854775807

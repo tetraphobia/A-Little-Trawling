@@ -179,7 +179,7 @@ namespace LittleTrawling.UI
                 GUILayout.BeginHorizontal("box");
                 bool isEquipped = (currentEngine == eng);
                 string title = $"<b>{eng.displayName}</b> ({eng.tier} Tier)";
-                string stats = $"Speed: x{eng.speedMultiplier:F1} | Turn: x{eng.maneuverabilityMultiplier:F1}";
+                string stats = $"Speed: {eng.maxSpeed:F1} m/s | Turn: {eng.turnSpeed:F0}°/s | Accel: {eng.acceleration:F1} m/s²";
                 GUILayout.Label($"{title}\n<color=#aaaaaa>{stats}</color>");
 
                 GUILayout.FlexibleSpace();

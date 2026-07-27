@@ -15,5 +15,7 @@ MonoBehaviour:
   displayName: Zoomer Engine
   cost: 10000
   tier: 2
-  speedMultiplier: 3
-  maneuverabilityMultiplier: 0.8
+  maxSpeed: 14
+  acceleration: 10
+  deceleration: 3
+  turnSpeed: 55

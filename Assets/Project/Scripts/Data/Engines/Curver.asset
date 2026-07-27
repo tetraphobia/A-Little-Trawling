@@ -15,5 +15,7 @@ MonoBehaviour:
   displayName: Curver
   cost: 10000
   tier: 2
-  speedMultiplier: 1
-  maneuverabilityMultiplier: 3
+  maxSpeed: 9
+  acceleration: 4
+  deceleration: 3
+  turnSpeed: 125

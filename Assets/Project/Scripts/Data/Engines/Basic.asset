@@ -15,5 +15,7 @@ MonoBehaviour:
   displayName: Basic Engine
   cost: 1000
   tier: 0
-  speedMultiplier: 1
-  maneuverabilityMultiplier: 1
+  maxSpeed: 3
+  acceleration: 2
+  deceleration: 1
+  turnSpeed: 35

@@ -15,15 +15,7 @@ namespace LittleTrawling.Vehicles
         [Tooltip("The equipped engine.")]
         [SerializeField] private Engine engine;
 
-        [Header("Movement")]
-        [Tooltip("Max speed (m/s).")]
-        [SerializeField] private float maxSpeed = 8f;
-        [Tooltip("Acceleration rate (m/s²).")]
-        [SerializeField] private float acceleration = 4f;
-        [Tooltip("Deceleration rate when releasing throttle (m/s²).")]
-        [SerializeField] private float deceleration = 3f;
-        [Tooltip("Degrees per second turn speed.")]
-        [SerializeField] private float turnSpeed = 55f;
+        [Header("Movement Alignment")]
         [Tooltip("Local axis indicating the forward facing direction of the boat model.")]
         [SerializeField] private Vector3 forwardAxis = Vector3.right;
 
@@ -62,8 +54,10 @@ namespace LittleTrawling.Vehicles
             set => engine = value;
         }
 
-        public float EffectiveMaxSpeed => maxSpeed * (engine != null ? engine.speedMultiplier : 1f);
-        public float EffectiveTurnSpeed => turnSpeed * (engine != null ? engine.maneuverabilityMultiplier : 1f);
+        public float MaxSpeed => engine != null ? engine.maxSpeed : 8f;
+        public float Acceleration => engine != null ? engine.acceleration : 4f;
+        public float Deceleration => engine != null ? engine.deceleration : 3f;
+        public float TurnSpeed => engine != null ? engine.turnSpeed : 55f;
 
         public Dock CurrentDockZone { get; set; }
         public bool IsDocked { get; private set; }
@@ -207,7 +201,7 @@ namespace LittleTrawling.Vehicles
             // Steering yaw
             if (_piloting && Mathf.Abs(input.x) > 0.01f)
             {
-                float turn = input.x * EffectiveTurnSpeed * Time.fixedDeltaTime;
+                float turn = input.x * TurnSpeed * Time.fixedDeltaTime;
                 _currentYaw += turn;
             }
 
@@ -218,8 +212,8 @@ namespace LittleTrawling.Vehicles
             _rb.MoveRotation(targetRotation);
 
             // Accelerate / decelerate speed based on input
-            float targetSpeed = input.y * EffectiveMaxSpeed;
-            float rate = Mathf.Abs(input.y) > 0.01f ? acceleration : deceleration;
+            float targetSpeed = input.y * MaxSpeed;
+            float rate = Mathf.Abs(input.y) > 0.01f ? Acceleration : Deceleration;
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.fixedDeltaTime);
 
             Vector3 nextPos = _rb.position;

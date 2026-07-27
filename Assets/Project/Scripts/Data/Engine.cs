@@ -24,12 +24,17 @@ namespace LittleTrawling.Data
         [Header("Engine Tier")]
         public EngineTier tier = EngineTier.Shoddy;
 
-        [Header("Speed")]
-        [Tooltip("Speed multiplier.")]
-        public float speedMultiplier = 1f;
+        [Header("Movement Properties")]
+        [Tooltip("Max speed (m/s).")]
+        public float maxSpeed = 8f;
 
-        [Header("Maneuverability")]
-        [Tooltip("How well the boat turns.")]
-        public float maneuverabilityMultiplier = 1f;
+        [Tooltip("Acceleration rate (m/s²).")]
+        public float acceleration = 4f;
+
+        [Tooltip("Deceleration rate when releasing throttle (m/s²).")]
+        public float deceleration = 3f;
+
+        [Tooltip("Degrees per second turn speed.")]
+        public float turnSpeed = 55f;
     }
 }
