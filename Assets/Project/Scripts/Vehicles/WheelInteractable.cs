@@ -15,7 +15,7 @@ namespace LittleTrawling.Vehicles
         [Tooltip("Tag on the player avatar.")]
         [SerializeField] private string playerTag = "Player";
         [Tooltip("Max distance to interact with the wheel if trigger detection is missed.")]
-        [SerializeField] private float maxInteractDistance = 2.5f;
+        [SerializeField] private float maxInteractDistance = 0.01f;
 
         private PlayerController _player;
         private BoatController _boatController;
@@ -108,7 +108,7 @@ namespace LittleTrawling.Vehicles
                 // Fallback distance check to ensure interaction works reliably
                 if (!canInteract && _player != null)
                 {
-                    Vector3 anchorPos = pilotAnchor != null ? pilotAnchor.position : transform.position;
+                Vector3 anchorPos = pilotAnchor != null ? pilotAnchor.position : transform.position;
                     float dist = Vector3.Distance(_player.transform.position, anchorPos);
                     if (dist <= maxInteractDistance)
                         canInteract = true;
