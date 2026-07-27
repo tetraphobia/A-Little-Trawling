@@ -64,6 +64,13 @@ namespace LittleTrawling.Vehicles
             // Stop steering (and dock if inside a docking zone)
             if (gm.IsState(GameState.Piloting))
             {
+                if (_player == null)
+                {
+                    var playerObj = GameObject.FindGameObjectWithTag(playerTag);
+                    if (playerObj != null)
+                        _player = playerObj.GetComponentInParent<PlayerController>() ?? playerObj.GetComponent<PlayerController>();
+                }
+
                 if (_boatController != null)
                 {
                     Dock targetDock = _boatController.CurrentDockZone;
@@ -87,6 +94,12 @@ namespace LittleTrawling.Vehicles
                     {
                         _boatController.DockTo(targetDock);
                     }
+                }
+
+                // Always snap player safely back to pilotAnchor on deck next to the wheel
+                if (_player != null && pilotAnchor != null)
+                {
+                    _player.SnapTo(pilotAnchor);
                 }
 
                 gm.SetState(GameState.Walking);

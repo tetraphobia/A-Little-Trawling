@@ -68,6 +68,7 @@ namespace LittleTrawling.Entities
         private void OnStateChanged(GameState state)
         {
             _active = state == GameState.Walking;
+            _verticalVel = 0f; // Reset gravity accumulator so player never gets pulled down through deck
             if (_active && _boatRigidbody != null)
                 _lastBoatPosition = _boatRigidbody.position;
         }
