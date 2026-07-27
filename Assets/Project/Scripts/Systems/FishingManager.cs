@@ -55,8 +55,16 @@ namespace LittleTrawling.Systems
 #endif
         }
 
+        private bool _enteredWalkingThisFrame;
+
         private void Start()
         {
+            var gm = GameManager.Instance;
+            if (gm != null)
+            {
+                gm.StateChanged += OnStateChanged;
+            }
+
             if (InputReader.Instance != null)
             {
                 InputReader.Instance.InteractPressed += OnInteract;
@@ -65,17 +73,35 @@ namespace LittleTrawling.Systems
 
         private void OnDestroy()
         {
+            if (GameManager.Instance != null)
+                GameManager.Instance.StateChanged -= OnStateChanged;
+
             if (InputReader.Instance != null)
-            {
                 InputReader.Instance.InteractPressed -= OnInteract;
-            }
+
             if (Instance == this) Instance = null;
+        }
+
+        private void OnStateChanged(GameState state)
+        {
+            if (state == GameState.Walking)
+            {
+                _enteredWalkingThisFrame = true;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            _enteredWalkingThisFrame = false;
         }
 
         private void OnInteract()
         {
             var gm = GameManager.Instance;
             if (gm == null || !gm.IsState(GameState.Walking)) return;
+
+            // Ignore interact press if state just transitioned to Walking in this exact frame
+            if (_enteredWalkingThisFrame) return;
 
             // Find nearest fish school in range
             var schools = Object.FindObjectsByType<FishSchool>(FindObjectsSortMode.None);
