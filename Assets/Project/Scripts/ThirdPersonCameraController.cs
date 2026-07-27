@@ -4,9 +4,7 @@ using LittleTrawling.Core;
 namespace LittleTrawling.Core
 {
     /// <summary>
-    /// WoW-style third-person orbit camera. Follows the active target from behind and
-    /// orbits when the player holds right-click and drags the mouse.
-    /// Switches between walking (player) and piloting (boat) profiles based on game state.
+    /// Third-person camera that orbits when you right-click and drag.
     /// </summary>
     public class ThirdPersonCameraController : MonoBehaviour
     {

@@ -5,8 +5,6 @@ namespace LittleTrawling.Entities
 {
     /// <summary>
     /// Put this on the Shopkeeper NPC object.
-    /// Provides an interaction zone for opening the Upgrade Shop.
-    /// Mirrors WheelInteractable input pattern.
     /// </summary>
     public class ShopNPC : MonoBehaviour
     {

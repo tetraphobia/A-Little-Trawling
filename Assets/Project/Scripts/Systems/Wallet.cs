@@ -6,12 +6,12 @@ namespace LittleTrawling.Core
     /// <summary>
     /// Tracks player Gold currency for buying upgrades and selling catches.
     /// </summary>
-    public class PlayerWallet : MonoBehaviour
+    public class Wallet : MonoBehaviour
     {
-        public static PlayerWallet Instance { get; private set; }
+        public static Wallet Instance { get; private set; }
 
         [Header("Starting Balance")]
-        [SerializeField] private int startingGold = 1500;
+        [SerializeField] private int startingGold = 999999;
 
         public int CurrentGold { get; private set; }
 
@@ -62,12 +62,12 @@ namespace LittleTrawling.Core
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void AutoEnsurePlayerWallet()
+        private static void AutoEnsureWallet()
         {
-            if (UnityEngine.Object.FindAnyObjectByType<PlayerWallet>() == null)
+            if (UnityEngine.Object.FindAnyObjectByType<Wallet>() == null)
             {
-                var walletObj = new GameObject("PlayerWallet");
-                walletObj.AddComponent<PlayerWallet>();
+                var walletObj = new GameObject("Wallet");
+                walletObj.AddComponent<Wallet>();
             }
         }
     }

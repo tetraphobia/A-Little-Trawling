@@ -38,31 +38,47 @@ namespace LittleTrawling.UI
 
         private void LoadDefaultCatalog()
         {
-            // Load Engine assets if unassigned
-            if (availableEngines == null || availableEngines.Count == 0)
+            if (availableEngines == null) availableEngines = new List<Engine>();
+            if (availableRods == null) availableRods = new List<Rod>();
+
+            availableEngines.Clear();
+            availableRods.Clear();
+
+#if UNITY_EDITOR
+            // Search all Engine assets in Data subdirectories
+            string[] engineGuids = UnityEditor.AssetDatabase.FindAssets("t:Engine");
+            foreach (string guid in engineGuids)
             {
-                var engines = Resources.LoadAll<Engine>("Data/Engines");
-                if (engines != null && engines.Length > 0)
-                    availableEngines.AddRange(engines);
-                else
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                var eng = UnityEditor.AssetDatabase.LoadAssetAtPath<Engine>(path);
+                if (eng != null && !availableEngines.Contains(eng))
                 {
-                    var allEngines = Resources.FindObjectsOfTypeAll<Engine>();
-                    if (allEngines != null) availableEngines.AddRange(allEngines);
+                    availableEngines.Add(eng);
                 }
             }
 
-            // Load Rod assets if unassigned
-            if (availableRods == null || availableRods.Count == 0)
+            // Search all Rod assets in Data subdirectories
+            string[] rodGuids = UnityEditor.AssetDatabase.FindAssets("t:Rod");
+            foreach (string guid in rodGuids)
             {
-                var rods = Resources.LoadAll<Rod>("Data/Rods");
-                if (rods != null && rods.Length > 0)
-                    availableRods.AddRange(rods);
-                else
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                var rod = UnityEditor.AssetDatabase.LoadAssetAtPath<Rod>(path);
+                if (rod != null && !availableRods.Contains(rod))
                 {
-                    var allRods = Resources.FindObjectsOfTypeAll<Rod>();
-                    if (allRods != null) availableRods.AddRange(allRods);
+                    availableRods.Add(rod);
                 }
             }
+#else
+            var engines = Resources.FindObjectsOfTypeAll<Engine>();
+            if (engines != null) availableEngines.AddRange(engines);
+
+            var rods = Resources.FindObjectsOfTypeAll<Rod>();
+            if (rods != null) availableRods.AddRange(rods);
+#endif
+
+            // Sort catalog items by cost
+            availableEngines.Sort((a, b) => a.cost.CompareTo(b.cost));
+            availableRods.Sort((a, b) => a.cost.CompareTo(b.cost));
         }
 
         private void Start()
@@ -130,7 +146,7 @@ namespace LittleTrawling.UI
         {
             if (!_isOpen) return;
 
-            // Create a styled GUI Shop Window
+            // Create a GUI Shop Window
             int winWidth = Mathf.Min(650, Screen.width - 40);
             int winHeight = Mathf.Min(500, Screen.height - 40);
             Rect winRect = new Rect((Screen.width - winWidth) / 2f, (Screen.height - winHeight) / 2f, winWidth, winHeight);
@@ -143,7 +159,7 @@ namespace LittleTrawling.UI
             GUILayout.BeginHorizontal();
             GUILayout.Label("<size=22><b>⚓ BOAT & GEAR UPGRADE SHOP</b></size>", GUILayout.Height(35));
             GUILayout.FlexibleSpace();
-            int currentGold = PlayerWallet.Instance != null ? PlayerWallet.Instance.CurrentGold : 0;
+            int currentGold = Wallet.Instance != null ? Wallet.Instance.CurrentGold : 0;
             GUILayout.Label($"<size=18><b>💰 Gold: ${currentGold}</b></size>", GUILayout.Height(35));
             GUILayout.EndHorizontal();
 
@@ -176,11 +192,11 @@ namespace LittleTrawling.UI
                 }
                 else
                 {
-                    bool canAfford = PlayerWallet.Instance != null && PlayerWallet.Instance.CanAfford(eng.cost);
+                    bool canAfford = Wallet.Instance != null && Wallet.Instance.CanAfford(eng.cost);
                     GUI.enabled = canAfford;
                     if (GUILayout.Button($"Buy ${eng.cost}", GUILayout.Width(110), GUILayout.Height(35)))
                     {
-                        if (PlayerWallet.Instance != null && PlayerWallet.Instance.TrySpendGold(eng.cost))
+                        if (Wallet.Instance != null && Wallet.Instance.TrySpendGold(eng.cost))
                         {
                             if (boat != null) boat.Engine = eng;
                         }
@@ -217,11 +233,11 @@ namespace LittleTrawling.UI
                 }
                 else
                 {
-                    bool canAfford = PlayerWallet.Instance != null && PlayerWallet.Instance.CanAfford(rod.cost);
+                    bool canAfford = Wallet.Instance != null && Wallet.Instance.CanAfford(rod.cost);
                     GUI.enabled = canAfford;
                     if (GUILayout.Button($"Buy ${rod.cost}", GUILayout.Width(110), GUILayout.Height(35)))
                     {
-                        if (PlayerWallet.Instance != null && PlayerWallet.Instance.TrySpendGold(rod.cost))
+                        if (Wallet.Instance != null && Wallet.Instance.TrySpendGold(rod.cost))
                         {
                             if (player != null) player.Rod = rod;
                         }
