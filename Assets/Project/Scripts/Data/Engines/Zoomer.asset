@@ -18,4 +18,6 @@ MonoBehaviour:
   maxSpeed: 14
   acceleration: 10
   deceleration: 3
-  turnSpeed: 55
+  turnSpeed: 75
+  angularAcceleration: 80
+  angularDeceleration: 35

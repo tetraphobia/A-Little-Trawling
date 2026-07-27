@@ -28,13 +28,19 @@ namespace LittleTrawling.Data
         [Tooltip("Max speed (m/s).")]
         public float maxSpeed = 8f;
 
-        [Tooltip("Acceleration rate (m/s²).")]
-        public float acceleration = 4f;
+        [Tooltip("Acceleration rate when applying throttle (m/s²).")]
+        public float acceleration = 3.5f;
 
-        [Tooltip("Deceleration rate when releasing throttle (m/s²).")]
-        public float deceleration = 3f;
+        [Tooltip("Gliding deceleration rate when releasing throttle (m/s²). Lower values create longer water gliding.")]
+        public float deceleration = 0.8f;
 
-        [Tooltip("Degrees per second turn speed.")]
-        public float turnSpeed = 55f;
+        [Tooltip("Max turn speed (deg/s).")]
+        public float turnSpeed = 45f;
+
+        [Tooltip("Angular acceleration when steering into a turn (deg/s²).")]
+        public float angularAcceleration = 80f;
+
+        [Tooltip("Angular deceleration/inertia when releasing steering (deg/s²). Lower values create smoother turn gliding.")]
+        public float angularDeceleration = 35f;
     }
 }

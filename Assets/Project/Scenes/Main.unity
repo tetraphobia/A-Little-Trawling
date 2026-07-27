@@ -33168,7 +33168,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e02630ebd254fb47b490c0edbb9ab99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Vehicles.BoatController
-  engine: {fileID: 11400000, guid: 2dc80825600eeaa4487a03b3b043f46f, type: 2}
+  engine: {fileID: 11400000, guid: 73491d76a1a25914183cbdac971121c3, type: 2}
   forwardAxis: {x: 1, y: 0, z: 0}
   autoDockOnStart: 1
   startingDock: {fileID: 411917995}
