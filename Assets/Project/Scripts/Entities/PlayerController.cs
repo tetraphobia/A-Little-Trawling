@@ -1,5 +1,7 @@
 using UnityEngine;
 using LittleTrawling.Core;
+using LittleTrawling.Data;
+using LittleTrawling.Vehicles;
 
 namespace LittleTrawling.Entities
 {
@@ -9,21 +11,32 @@ namespace LittleTrawling.Entities
     [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
     {
+        [Header("Equipment")]
+        [Tooltip("The equipped fishing rod.")]
+        [SerializeField] private Rod rod;
+
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 3.5f;
         [SerializeField] private float turnSpeed = 720f;
         [SerializeField] private float gravity = -20f;
 
         [Header("Deck Boundaries")]
-        [Tooltip("If true, clamps the player's position to stay on the boat deck.")]
+        [Tooltip("If true, clamps the player's position to stay on the boat deck when not docked.")]
         [SerializeField] private bool restrictToDeck = true;
         [Tooltip("Local X bounds (min, max) relative to the parent.")]
         [SerializeField] private Vector2 deckBoundsX = new Vector2(-1.1f, 1.1f);
         [Tooltip("Local Z bounds (min, max) relative to the parent.")]
         [SerializeField] private Vector2 deckBoundsZ = new Vector2(-0.6f, 0.6f);
 
+        public Rod Rod
+        {
+            get => rod;
+            set => rod = value;
+        }
+
         private CharacterController _cc;
         private Rigidbody _boatRigidbody;
+        private BoatController _boatController;
         private bool _active;
         private float _verticalVel;
         private Vector3 _lastBoatPosition;
@@ -33,6 +46,7 @@ namespace LittleTrawling.Entities
             _cc = GetComponent<CharacterController>();
             // Track the boat's movement so that the player will move along with it even when not piloting.
             _boatRigidbody = GetComponentInParent<Rigidbody>();
+            _boatController = GetComponentInParent<BoatController>();
         }
 
         private void Start()
@@ -54,6 +68,7 @@ namespace LittleTrawling.Entities
         private void OnStateChanged(GameState state)
         {
             _active = state == GameState.Walking;
+            _verticalVel = 0f; // Reset gravity accumulator so player never gets pulled down through deck
             if (_active && _boatRigidbody != null)
                 _lastBoatPosition = _boatRigidbody.position;
         }
@@ -91,8 +106,9 @@ namespace LittleTrawling.Entities
 
             _cc.Move((move + Vector3.up * _verticalVel) * Time.deltaTime + boatDelta);
 
-            // Clamp local position so player remains on top of the boat deck
-            if (restrictToDeck && transform.parent != null)
+            // Clamp local position so player remains on top of the boat deck only when NOT docked
+            bool isDocked = _boatController != null && _boatController.IsDocked;
+            if (restrictToDeck && !isDocked && transform.parent != null)
             {
                 Vector3 localPos = transform.localPosition;
                 float clampedX = Mathf.Clamp(localPos.x, deckBoundsX.x, deckBoundsX.y);
