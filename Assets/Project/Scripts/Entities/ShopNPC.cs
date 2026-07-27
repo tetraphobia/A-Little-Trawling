@@ -6,14 +6,14 @@ namespace LittleTrawling.Entities
     /// <summary>
     /// Put this on the Shopkeeper NPC object.
     /// Provides an interaction zone for opening the Upgrade Shop.
+    /// Mirrors WheelInteractable input pattern.
     /// </summary>
     public class ShopNPC : MonoBehaviour
     {
         [Tooltip("Tag on the player avatar.")]
         [SerializeField] private string playerTag = "Player";
-
-        [Tooltip("Max distance to interact if trigger detection is missed.")]
-        [SerializeField] private float maxInteractDistance = 3.0f;
+        [Tooltip("Max distance to interact with the shopkeeper if trigger detection is missed.")]
+        [SerializeField] private float maxInteractDistance = 2.5f;
 
         private PlayerController _player;
         private bool _playerInRange;
@@ -21,7 +21,14 @@ namespace LittleTrawling.Entities
         private void Start()
         {
             if (InputReader.Instance != null)
+            {
                 InputReader.Instance.InteractPressed += OnInteract;
+                Debug.Log($"[ShopNPC] Registered InteractPressed on InputReader.Instance ({InputReader.Instance.name})");
+            }
+            else
+            {
+                Debug.LogWarning("[ShopNPC] Start() - InputReader.Instance is NULL!");
+            }
         }
 
         private void OnDestroy()
@@ -32,20 +39,26 @@ namespace LittleTrawling.Entities
 
         private void OnTriggerEnter(Collider other)
         {
+            Debug.Log($"[ShopNPC] OnTriggerEnter with object '{other.name}' (Tag: '{other.tag}')");
             if (!other.CompareTag(playerTag)) return;
             _playerInRange = true;
             _player = other.GetComponentInParent<PlayerController>() ?? other.GetComponent<PlayerController>();
+            Debug.Log($"[ShopNPC] Player entered trigger range! Player: {_player?.name}");
         }
 
         private void OnTriggerExit(Collider other)
         {
+            Debug.Log($"[ShopNPC] OnTriggerExit with object '{other.name}' (Tag: '{other.tag}')");
             if (!other.CompareTag(playerTag)) return;
             _playerInRange = false;
+            Debug.Log("[ShopNPC] Player exited trigger range.");
         }
 
         private void OnInteract()
         {
             var gm = GameManager.Instance;
+            Debug.Log($"[ShopNPC] OnInteract event received! GameState: {(gm != null ? gm.CurrentState.ToString() : "NULL")}");
+
             if (gm == null) return;
 
             // Open shop when walking near the NPC
@@ -59,16 +72,21 @@ namespace LittleTrawling.Entities
                 }
 
                 bool canInteract = _playerInRange;
+                float dist = -1f;
 
-                if (!canInteract && _player != null)
+                // Fallback distance check to ensure interaction works reliably
+                if (_player != null)
                 {
-                    float dist = Vector3.Distance(_player.transform.position, transform.position);
+                    dist = Vector3.Distance(_player.transform.position, transform.position);
                     if (dist <= maxInteractDistance)
                         canInteract = true;
                 }
 
+                Debug.Log($"[ShopNPC] Evaluate interact: playerInRange={_playerInRange}, dist={dist:F2}m (max={maxInteractDistance}m), canInteract={canInteract}");
+
                 if (canInteract)
                 {
+                    Debug.Log("[ShopNPC] Success! Switching state to GameState.Shopping");
                     gm.SetState(GameState.Shopping);
                 }
             }
@@ -77,15 +95,17 @@ namespace LittleTrawling.Entities
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoEnsureShopNPC()
         {
-            if (UnityEngine.Object.FindAnyObjectByType<ShopNPC>() == null)
+            if (Object.FindAnyObjectByType<ShopNPC>() == null)
             {
-                var dock = UnityEngine.Object.FindAnyObjectByType<LittleTrawling.Environment.Dock>();
+                var dock = Object.FindAnyObjectByType<LittleTrawling.Environment.Dock>();
                 Vector3 spawnPos = dock != null ? dock.transform.position + Vector3.up * 0.8f + dock.transform.right * 1.8f : new Vector3(2f, 1f, 2f);
                 var npcObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
                 npcObj.name = "Shopkeeper NPC";
                 npcObj.transform.position = spawnPos;
+
                 var col = npcObj.GetComponent<CapsuleCollider>();
                 if (col != null) col.isTrigger = true;
+
                 npcObj.AddComponent<ShopNPC>();
 
                 var mr = npcObj.GetComponent<MeshRenderer>();

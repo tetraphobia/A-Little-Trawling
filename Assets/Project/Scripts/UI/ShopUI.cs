@@ -21,6 +21,7 @@ namespace LittleTrawling.UI
         [SerializeField] private List<Rod> availableRods = new List<Rod>();
 
         private bool _isOpen;
+        private bool _openedThisFrame;
         private Vector2 _scrollPos;
 
         private void Awake()
@@ -72,6 +73,11 @@ namespace LittleTrawling.UI
                 gm.StateChanged += OnStateChanged;
                 OnStateChanged(gm.CurrentState);
             }
+
+            if (InputReader.Instance != null)
+            {
+                InputReader.Instance.InteractPressed += OnInteractPressed;
+            }
         }
 
         private void OnDestroy()
@@ -79,25 +85,34 @@ namespace LittleTrawling.UI
             if (GameManager.Instance != null)
                 GameManager.Instance.StateChanged -= OnStateChanged;
 
+            if (InputReader.Instance != null)
+                InputReader.Instance.InteractPressed -= OnInteractPressed;
+
             if (Instance == this) Instance = null;
         }
 
         private void OnStateChanged(GameState state)
         {
+            Debug.Log($"[ShopUI] OnStateChanged received state: {state}");
+            bool wasOpen = _isOpen;
             _isOpen = (state == GameState.Shopping);
-            if (_isOpen)
+            if (_isOpen && !wasOpen)
             {
+                _openedThisFrame = true;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
         }
 
-        private void Update()
+        private void LateUpdate()
         {
-            if (!_isOpen) return;
+            _openedThisFrame = false;
+        }
 
-            // Close shop on Escape or E key press
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+        private void OnInteractPressed()
+        {
+            Debug.Log($"[ShopUI] OnInteractPressed event received. _isOpen: {_isOpen}, openedThisFrame: {_openedThisFrame}");
+            if (_isOpen && !_openedThisFrame)
             {
                 CloseShop();
             }
@@ -136,7 +151,7 @@ namespace LittleTrawling.UI
 
             _scrollPos = GUILayout.BeginScrollView(_scrollPos, GUILayout.Height(winHeight - 120));
 
-            // --- ENGINES SECTION ---
+            // Engines
             GUILayout.Label("<size=16><b>🚀 Engines</b></size>");
             var boat = UnityEngine.Object.FindAnyObjectByType<BoatController>();
             Engine currentEngine = boat != null ? boat.Engine : null;
@@ -177,7 +192,7 @@ namespace LittleTrawling.UI
 
             GUILayout.Space(15);
 
-            // --- FISHING RODS SECTION ---
+            // Fishing rods
             GUILayout.Label("<size=16><b>🎣 Fishing Rods</b></size>");
             var player = UnityEngine.Object.FindAnyObjectByType<PlayerController>();
             Rod currentRod = player != null ? player.Rod : null;
@@ -221,7 +236,7 @@ namespace LittleTrawling.UI
             GUILayout.FlexibleSpace();
 
             // Exit Button
-            if (GUILayout.Button("Close Shop (Esc)", GUILayout.Height(35)))
+            if (GUILayout.Button("Close Shop", GUILayout.Height(35)))
             {
                 CloseShop();
             }
