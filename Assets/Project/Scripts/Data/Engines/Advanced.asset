@@ -15,7 +15,9 @@ MonoBehaviour:
   displayName: Advanced Engine
   cost: 5000
   tier: 1
-  maxSpeed: 7
-  acceleration: 3
-  deceleration: 4
-  turnSpeed: 85
+  maxSpeed: 6
+  acceleration: 2
+  deceleration: 1.2
+  turnSpeed: 45
+  angularAcceleration: 120
+  angularDeceleration: 55

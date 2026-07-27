@@ -19,3 +19,5 @@ MonoBehaviour:
   acceleration: 4
   deceleration: 3
   turnSpeed: 125
+  angularAcceleration: 155
+  angularDeceleration: 155

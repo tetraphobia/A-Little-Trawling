@@ -34,6 +34,7 @@ namespace LittleTrawling.Vehicles
         private Rigidbody _rb;
         private bool _piloting;
         private float _currentSpeed;
+        private float _currentAngularVelocity;
         private float _baseY;
         private float _currentYaw;
 
@@ -55,9 +56,11 @@ namespace LittleTrawling.Vehicles
         }
 
         public float MaxSpeed => engine != null ? engine.maxSpeed : 8f;
-        public float Acceleration => engine != null ? engine.acceleration : 4f;
-        public float Deceleration => engine != null ? engine.deceleration : 3f;
-        public float TurnSpeed => engine != null ? engine.turnSpeed : 55f;
+        public float Acceleration => engine != null ? engine.acceleration : 3.5f;
+        public float Deceleration => engine != null ? engine.deceleration : 0.8f;
+        public float TurnSpeed => engine != null ? engine.turnSpeed : 45f;
+        public float AngularAcceleration => engine != null ? engine.angularAcceleration : 80f;
+        public float AngularDeceleration => engine != null ? engine.angularDeceleration : 35f;
 
         public Dock CurrentDockZone { get; set; }
         public bool IsDocked { get; private set; }
@@ -96,6 +99,7 @@ namespace LittleTrawling.Vehicles
             if (dock == null) return;
             IsDocked = true;
             _currentSpeed = 0f;
+            _currentAngularVelocity = 0f;
             CurrentDockZone = dock;
             Transform targetBerth = dock.Berth;
             if (targetBerth != null)
@@ -198,11 +202,14 @@ namespace LittleTrawling.Vehicles
         {
             Vector2 input = _piloting && InputReader.Instance != null ? InputReader.Instance.MoveInput : Vector2.zero;
 
-            // Steering yaw
-            if (_piloting && Mathf.Abs(input.x) > 0.01f)
+            // Smooth rotational acceleration & coasting turn inertia
+            float targetAngularVel = input.x * TurnSpeed;
+            float turnRate = Mathf.Abs(input.x) > 0.01f ? AngularAcceleration : AngularDeceleration;
+            _currentAngularVelocity = Mathf.MoveTowards(_currentAngularVelocity, targetAngularVel, turnRate * Time.fixedDeltaTime);
+
+            if (Mathf.Abs(_currentAngularVelocity) > 0.001f)
             {
-                float turn = input.x * TurnSpeed * Time.fixedDeltaTime;
-                _currentYaw += turn;
+                _currentYaw += _currentAngularVelocity * Time.fixedDeltaTime;
             }
 
             // Apply steering yaw + ocean wave rocking pitch/roll
@@ -211,10 +218,24 @@ namespace LittleTrawling.Vehicles
             Quaternion targetRotation = Quaternion.Euler(pitch, _currentYaw, roll);
             _rb.MoveRotation(targetRotation);
 
-            // Accelerate / decelerate speed based on input
-            float targetSpeed = input.y * MaxSpeed;
-            float rate = Mathf.Abs(input.y) > 0.01f ? Acceleration : Deceleration;
-            _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.fixedDeltaTime);
+            // Smooth linear speed acceleration, braking, and long water gliding deceleration
+            float targetSpeed = 0f;
+            float accelRate = Deceleration;
+
+            if (input.y > 0.01f)
+            {
+                targetSpeed = input.y * MaxSpeed;
+                accelRate = Acceleration;
+            }
+            else if (input.y < -0.01f)
+            {
+                // Pressing S acts as a brake down to 0, but cannot reverse
+                targetSpeed = 0f;
+                accelRate = Acceleration;
+            }
+
+            _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, accelRate * Time.fixedDeltaTime);
+            _currentSpeed = Mathf.Max(0f, _currentSpeed);
 
             Vector3 nextPos = _rb.position;
 

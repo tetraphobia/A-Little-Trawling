@@ -16,6 +16,8 @@ MonoBehaviour:
   cost: 1000
   tier: 0
   maxSpeed: 3
-  acceleration: 2
-  deceleration: 1
-  turnSpeed: 35
+  acceleration: 0.5
+  deceleration: 0.8
+  turnSpeed: 45
+  angularAcceleration: 80
+  angularDeceleration: 35
