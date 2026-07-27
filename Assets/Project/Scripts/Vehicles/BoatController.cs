@@ -36,8 +36,18 @@ namespace LittleTrawling.Vehicles
         private Rigidbody _rb;
         private bool _piloting;
         private float _currentSpeed;
+        private float _baseY;
+        private float _currentYaw;
 
-        public Vector3 ForwardDirection => transform.TransformDirection(forwardAxis.normalized);
+        public Vector3 ForwardDirection
+        {
+            get
+            {
+                Vector3 dir = transform.TransformDirection(forwardAxis.normalized);
+                dir.y = 0f;
+                return dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.forward;
+            }
+        }
 
         public Engine Engine
         {
@@ -60,11 +70,22 @@ namespace LittleTrawling.Vehicles
             Transform targetBerth = dock.Berth;
             if (targetBerth != null)
             {
-                transform.SetPositionAndRotation(targetBerth.position, targetBerth.rotation);
+                float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
+                _baseY = targetBerth.position.y - oceanOffset;
+                _currentYaw = targetBerth.eulerAngles.y;
+
+                Vector3 targetPos = targetBerth.position;
+                targetPos.y = _baseY + oceanOffset;
+
+                float roll = OceanController.Instance != null ? OceanController.Instance.CurrentRoll : 0f;
+                float pitch = OceanController.Instance != null ? OceanController.Instance.CurrentPitch : 0f;
+                Quaternion targetRot = Quaternion.Euler(pitch, _currentYaw, roll);
+
+                transform.SetPositionAndRotation(targetPos, targetRot);
                 if (_rb != null)
                 {
-                    _rb.position = targetBerth.position;
-                    _rb.rotation = targetBerth.rotation;
+                    _rb.position = targetPos;
+                    _rb.rotation = targetRot;
                 }
                 Physics.SyncTransforms();
             }
@@ -79,6 +100,22 @@ namespace LittleTrawling.Vehicles
         {
             _rb = GetComponent<Rigidbody>();
             _rb.isKinematic = true;
+            _currentYaw = transform.eulerAngles.y;
+            EnsureOceanController();
+            float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
+            _baseY = transform.position.y - oceanOffset;
+        }
+
+        private void EnsureOceanController()
+        {
+            if (OceanController.Instance == null)
+            {
+                var oceanObj = GameObject.Find("Ocean");
+                if (oceanObj != null && oceanObj.GetComponent<OceanController>() == null)
+                {
+                    oceanObj.AddComponent<OceanController>();
+                }
+            }
         }
 
         private void Start()
@@ -131,20 +168,35 @@ namespace LittleTrawling.Vehicles
         {
             Vector2 input = _piloting && InputReader.Instance != null ? InputReader.Instance.MoveInput : Vector2.zero;
 
-            // Steering
+            // Steering yaw
             if (_piloting && Mathf.Abs(input.x) > 0.01f)
             {
                 float turn = input.x * EffectiveTurnSpeed * Time.fixedDeltaTime;
-                _rb.MoveRotation(_rb.rotation * Quaternion.Euler(0f, turn, 0f));
+                _currentYaw += turn;
             }
+
+            // Apply steering yaw + ocean wave rocking pitch/roll
+            float roll = OceanController.Instance != null ? OceanController.Instance.CurrentRoll : 0f;
+            float pitch = OceanController.Instance != null ? OceanController.Instance.CurrentPitch : 0f;
+            Quaternion targetRotation = Quaternion.Euler(pitch, _currentYaw, roll);
+            _rb.MoveRotation(targetRotation);
 
             // Accelerate gradually
             float targetSpeed = input.y * EffectiveMaxSpeed;
             float rate = Mathf.Abs(input.y) > 0.01f ? acceleration : deceleration;
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.fixedDeltaTime);
 
+            Vector3 nextPos = _rb.position;
             if (Mathf.Abs(_currentSpeed) > 0.0001f)
-                _rb.MovePosition(_rb.position + ForwardDirection * _currentSpeed * Time.fixedDeltaTime);
+            {
+                nextPos += ForwardDirection * _currentSpeed * Time.fixedDeltaTime;
+            }
+
+            // Match ocean bobbing Y position
+            float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
+            nextPos.y = _baseY + oceanOffset;
+
+            _rb.MovePosition(nextPos);
         }
     }
 }
