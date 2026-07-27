@@ -33,6 +33,12 @@ namespace LittleTrawling.Vehicles
         [Tooltip("Optional reference to the starting dock. If unassigned, automatically finds the nearest dock in the scene.")]
         [SerializeField] private Dock startingDock;
 
+        [Header("Land Protection")]
+        [Tooltip("Safety radius for checking land collision ahead.")]
+        [SerializeField] private float landCollisionRadius = 0.8f;
+        [Tooltip("Distance ahead to check for land obstacles.")]
+        [SerializeField] private float landCheckDistance = 0.5f;
+
         private Rigidbody _rb;
         private bool _piloting;
         private float _currentSpeed;
@@ -43,7 +49,8 @@ namespace LittleTrawling.Vehicles
         {
             get
             {
-                Vector3 dir = transform.TransformDirection(forwardAxis.normalized);
+                Quaternion yawRot = Quaternion.Euler(0f, _currentYaw, 0f);
+                Vector3 dir = yawRot * forwardAxis.normalized;
                 dir.y = 0f;
                 return dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.forward;
             }
@@ -60,6 +67,35 @@ namespace LittleTrawling.Vehicles
 
         public Dock CurrentDockZone { get; set; }
         public bool IsDocked { get; private set; }
+
+        private bool IsLandCollider(Collider col)
+        {
+            if (col == null || col.isTrigger) return false;
+            if (col.transform == transform || col.transform.IsChildOf(transform)) return false;
+            if (col.CompareTag("Player")) return false;
+            if (col.name.Contains("Dock") || col.GetComponentInParent<Dock>() != null) return false;
+
+            return true;
+        }
+
+        private bool WouldHitLand(Vector3 currentPos, Vector3 moveDelta)
+        {
+            if (IsDocked || moveDelta.sqrMagnitude < 0.000001f) return false;
+
+            Vector3 origin = currentPos + Vector3.up * 0.5f;
+            Vector3 dir = moveDelta.normalized;
+            float dist = moveDelta.magnitude + landCheckDistance;
+
+            RaycastHit[] hits = Physics.SphereCastAll(origin, landCollisionRadius, dir, dist);
+            foreach (var h in hits)
+            {
+                if (IsLandCollider(h.collider))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public void DockTo(Dock dock)
         {
@@ -181,15 +217,26 @@ namespace LittleTrawling.Vehicles
             Quaternion targetRotation = Quaternion.Euler(pitch, _currentYaw, roll);
             _rb.MoveRotation(targetRotation);
 
-            // Accelerate gradually
+            // Accelerate / decelerate speed based on input
             float targetSpeed = input.y * EffectiveMaxSpeed;
             float rate = Mathf.Abs(input.y) > 0.01f ? acceleration : deceleration;
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.fixedDeltaTime);
 
             Vector3 nextPos = _rb.position;
+
             if (Mathf.Abs(_currentSpeed) > 0.0001f)
             {
-                nextPos += ForwardDirection * _currentSpeed * Time.fixedDeltaTime;
+                Vector3 moveDelta = ForwardDirection * _currentSpeed * Time.fixedDeltaTime;
+
+                // Prevent the boat from driving on land
+                if (!WouldHitLand(_rb.position, moveDelta))
+                {
+                    nextPos += moveDelta;
+                }
+                else
+                {
+                    _currentSpeed = 0f;
+                }
             }
 
             // Match ocean bobbing Y position
