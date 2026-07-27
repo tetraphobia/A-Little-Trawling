@@ -16,8 +16,8 @@ namespace LittleTrawling.Environment
         [Tooltip("Optional collider defining the docking zone hitbox. If unassigned, automatically finds a collider on this object or its children.")]
         [SerializeField] private Collider dockingHitbox;
 
-        [Tooltip("Maximum distance from the berth to consider the boat inside docking range as a fallback.")]
-        [SerializeField] private float berthDockingRadius = 6.0f;
+        [Tooltip("Maximum distance from the berth to consider the boat inside docking range as a fallback when no collider is present.")]
+        [SerializeField] private float berthDockingRadius = 2.5f;
 
         private readonly HashSet<Collider> _occupyingColliders = new HashSet<Collider>();
 
@@ -28,7 +28,19 @@ namespace LittleTrawling.Environment
             get
             {
                 if (dockingHitbox == null)
-                    dockingHitbox = GetComponent<Collider>() ?? GetComponentInChildren<Collider>();
+                {
+                    Collider[] colliders = GetComponentsInChildren<Collider>();
+                    foreach (var c in colliders)
+                    {
+                        if (c != null && c.isTrigger)
+                        {
+                            dockingHitbox = c;
+                            break;
+                        }
+                    }
+                    if (dockingHitbox == null)
+                        dockingHitbox = GetComponent<Collider>() ?? GetComponentInChildren<Collider>();
+                }
                 return dockingHitbox;
             }
         }
@@ -84,9 +96,6 @@ namespace LittleTrawling.Environment
                 Vector3 boatPos = boat.transform.position;
                 if (col.bounds.Contains(boatPos)) return true;
 
-                Vector3 closest = col.bounds.ClosestPoint(boatPos);
-                if (Vector3.Distance(boatPos, closest) <= 1.5f) return true;
-
                 Collider[] boatColliders = boat.GetComponentsInChildren<Collider>();
                 foreach (var bCol in boatColliders)
                 {
@@ -95,9 +104,11 @@ namespace LittleTrawling.Environment
                         return true;
                     }
                 }
+
+                return false;
             }
 
-            // 3. Fallback: Check proximity to Berth transform
+            // 3. Fallback: Check proximity to Berth transform (only when no Hitbox collider exists)
             Transform targetBerth = Berth;
             if (targetBerth != null)
             {

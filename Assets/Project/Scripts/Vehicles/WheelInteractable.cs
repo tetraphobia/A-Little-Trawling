@@ -71,6 +71,7 @@ namespace LittleTrawling.Vehicles
                     // Fallback verify using bounds overlap if CurrentDockZone was missed
                     if (targetDock == null || !targetDock.IsBoatInside(_boatController))
                     {
+                        targetDock = null;
                         var docks = Object.FindObjectsByType<Dock>(FindObjectsSortMode.None);
                         foreach (var d in docks)
                         {

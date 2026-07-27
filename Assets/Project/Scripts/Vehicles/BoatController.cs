@@ -27,6 +27,12 @@ namespace LittleTrawling.Vehicles
         [Tooltip("Local axis indicating the forward facing direction of the boat model.")]
         [SerializeField] private Vector3 forwardAxis = Vector3.right;
 
+        [Header("Docking")]
+        [Tooltip("If true, automatically docks and snaps the boat to the berth on game start.")]
+        [SerializeField] private bool autoDockOnStart = true;
+        [Tooltip("Optional reference to the starting dock. If unassigned, automatically finds the nearest dock in the scene.")]
+        [SerializeField] private Dock startingDock;
+
         private Rigidbody _rb;
         private bool _piloting;
         private float _currentSpeed;
@@ -50,6 +56,7 @@ namespace LittleTrawling.Vehicles
             if (dock == null) return;
             IsDocked = true;
             _currentSpeed = 0f;
+            CurrentDockZone = dock;
             Transform targetBerth = dock.Berth;
             if (targetBerth != null)
             {
@@ -76,6 +83,32 @@ namespace LittleTrawling.Vehicles
 
         private void Start()
         {
+            if (autoDockOnStart)
+            {
+                Dock targetDock = startingDock;
+                if (targetDock == null)
+                {
+                    var docks = Object.FindObjectsByType<Dock>(FindObjectsSortMode.None);
+                    float closestDist = float.MaxValue;
+                    foreach (var d in docks)
+                    {
+                        if (d == null) continue;
+                        Transform b = d.Berth;
+                        float dist = Vector3.Distance(transform.position, b != null ? b.position : d.transform.position);
+                        if (dist < closestDist)
+                        {
+                            closestDist = dist;
+                            targetDock = d;
+                        }
+                    }
+                }
+
+                if (targetDock != null)
+                {
+                    DockTo(targetDock);
+                }
+            }
+
             var gm = GameManager.Instance;
             if (gm != null)
             {
