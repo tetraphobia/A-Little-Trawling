@@ -229,7 +229,11 @@ namespace LittleTrawling.Vehicles
             }
             else if (input.y < -0.01f)
             {
+<<<<<<< HEAD
                 // Prevent reversing
+=======
+                // Pressing S acts as a brake down to 0, but cannot reverse
+>>>>>>> 9bf9533c835fb06da847cf761071236f66ff7148
                 targetSpeed = 0f;
                 accelRate = Acceleration;
             }
