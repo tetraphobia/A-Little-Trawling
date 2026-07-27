@@ -98,7 +98,7 @@ namespace LittleTrawling.Core
         {
             if (_activeTarget == null || InputReader.Instance == null) return;
 
-            // --- Orbit input (only while right-click is held) ---
+            // Orbit while right click is held
             if (InputReader.Instance.CameraLookHeld)
             {
                 Vector2 look = InputReader.Instance.LookInput;
@@ -115,16 +115,16 @@ namespace LittleTrawling.Core
                 Cursor.visible = true;
             }
 
-            // --- Smoothly transition between state profiles ---
+            // Transition between state profiles
             _currentDistance = Mathf.Lerp(_currentDistance, _targetDistance, transitionSpeed * Time.deltaTime);
             _currentOffset = Vector3.Lerp(_currentOffset, _targetOffset, transitionSpeed * Time.deltaTime);
 
-            // --- Compute desired position ---
+            // Compute desired position
             Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
             Vector3 focusPoint = _activeTarget.position + _currentOffset;
             Vector3 desiredPosition = focusPoint - (rotation * Vector3.forward) * _currentDistance;
 
-            // --- Smooth follow ---
+            // Follow
             transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref _smoothVelocity, followSmoothTime);
             transform.rotation = Quaternion.LookRotation(focusPoint - transform.position);
         }
