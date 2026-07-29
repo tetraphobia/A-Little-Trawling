@@ -18,12 +18,12 @@ namespace LittleTrawling.Vehicles
         [Header("Movement Alignment")]
         [Tooltip("Local axis indicating the forward facing direction of the boat model.")]
         [SerializeField] private Vector3 forwardAxis = Vector3.right;
+
         [Header("Docking")]
         [Tooltip("If true, automatically docks and snaps the boat to the berth on game start.")]
         [SerializeField] private bool autoDockOnStart = true;
         [Tooltip("Optional reference to the starting dock. If unassigned, automatically finds the nearest dock in the scene.")]
         [SerializeField] private Dock startingDock;
-
 
         [Header("Land Protection")]
         [Tooltip("Safety radius for checking land collision ahead.")]
@@ -65,6 +65,120 @@ namespace LittleTrawling.Vehicles
         public Dock CurrentDockZone { get; set; }
         public bool IsDocked { get; private set; }
 
+        private void Awake()
+        {
+            _rb = GetComponent<Rigidbody>();
+            _rb.isKinematic = true;
+            _currentYaw = transform.eulerAngles.y;
+            EnsureOceanController();
+            float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
+            _baseY = transform.position.y - oceanOffset;
+        }
+
+        private void Start()
+        {
+            if (autoDockOnStart)
+            {
+                Dock targetDock = startingDock ?? FindNearestDock();
+                if (targetDock != null)
+                {
+                    DockTo(targetDock);
+                }
+            }
+
+            var gm = GameManager.Instance;
+            if (gm != null)
+            {
+                gm.StateChanged += OnStateChanged;
+                OnStateChanged(gm.CurrentState);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.StateChanged -= OnStateChanged;
+            }
+        }
+
+        private void OnStateChanged(GameState state) => _piloting = state == GameState.Piloting;
+
+        public void DockTo(Dock dock)
+        {
+            if (dock == null) return;
+
+            IsDocked = true;
+            _currentSpeed = 0f;
+            _currentAngularVelocity = 0f;
+            CurrentDockZone = dock;
+
+            Transform targetBerth = dock.Berth;
+            if (targetBerth != null)
+            {
+                float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
+                _baseY = targetBerth.position.y - oceanOffset;
+                _currentYaw = targetBerth.eulerAngles.y;
+
+                Vector3 targetPos = targetBerth.position;
+                targetPos.y = _baseY + oceanOffset;
+
+                Quaternion targetRot = CalculateWaveRotation();
+                transform.SetPositionAndRotation(targetPos, targetRot);
+
+                if (_rb != null)
+                {
+                    _rb.position = targetPos;
+                    _rb.rotation = targetRot;
+                }
+                Physics.SyncTransforms();
+            }
+        }
+
+        public void Undock()
+        {
+            IsDocked = false;
+        }
+
+        private Dock FindNearestDock()
+        {
+            var docks = Object.FindObjectsByType<Dock>(FindObjectsSortMode.None);
+            Dock closest = null;
+            float closestDist = float.MaxValue;
+
+            foreach (var d in docks)
+            {
+                if (d == null) continue;
+                Transform b = d.Berth;
+                float dist = Vector3.Distance(transform.position, b != null ? b.position : d.transform.position);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closest = d;
+                }
+            }
+            return closest;
+        }
+
+        private void EnsureOceanController()
+        {
+            if (OceanController.Instance == null)
+            {
+                var oceanObj = GameObject.Find("Ocean");
+                if (oceanObj != null && oceanObj.GetComponent<OceanController>() == null)
+                {
+                    oceanObj.AddComponent<OceanController>();
+                }
+            }
+        }
+
+        private Quaternion CalculateWaveRotation()
+        {
+            float roll = OceanController.Instance != null ? OceanController.Instance.CurrentRoll : 0f;
+            float pitch = OceanController.Instance != null ? OceanController.Instance.CurrentPitch : 0f;
+            return Quaternion.Euler(pitch, _currentYaw, roll);
+        }
+
         private bool IsLandCollider(Collider col)
         {
             if (col == null || col.isTrigger) return false;
@@ -94,130 +208,11 @@ namespace LittleTrawling.Vehicles
             return false;
         }
 
-        private int _fixedUpdateCount;
-
-        public void DockTo(Dock dock)
-        {
-            if (dock == null)
-            {
-                Debug.LogWarning("[BoatController] DockTo called with null dock!");
-                return;
-            }
-            IsDocked = true;
-            _currentSpeed = 0f;
-            _currentAngularVelocity = 0f;
-            CurrentDockZone = dock;
-            Transform targetBerth = dock.Berth;
-            if (targetBerth != null)
-            {
-                float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
-                _baseY = targetBerth.position.y - oceanOffset;
-                _currentYaw = targetBerth.eulerAngles.y;
-
-                Vector3 targetPos = targetBerth.position;
-                targetPos.y = _baseY + oceanOffset;
-
-                float roll = OceanController.Instance != null ? OceanController.Instance.CurrentRoll : 0f;
-                float pitch = OceanController.Instance != null ? OceanController.Instance.CurrentPitch : 0f;
-                Quaternion targetRot = Quaternion.Euler(pitch, _currentYaw, roll);
-
-                Debug.Log($"[BoatController] DockTo '{dock.name}'! Berth Name='{targetBerth.name}', Berth Pos={targetBerth.position}, Berth Rot={targetBerth.eulerAngles}, Berth Scale={targetBerth.lossyScale}, Configured forwardAxis={forwardAxis}");
-
-                transform.SetPositionAndRotation(targetPos, targetRot);
-                if (_rb != null)
-                {
-                    _rb.position = targetPos;
-                    _rb.rotation = targetRot;
-                }
-                Physics.SyncTransforms();
-                Debug.Log($"[BoatController] DockTo Complete. Boat WorldPos={transform.position}, Rot={transform.eulerAngles}, RB Pos={(_rb != null ? _rb.position : Vector3.zero)}, IsDocked={IsDocked}");
-            }
-            else
-            {
-                Debug.LogError($"[BoatController] DockTo called but dock '{dock.name}' has null Berth!");
-            }
-        }
-
-        public void Undock()
-        {
-            Debug.Log("[BoatController] Undock called.");
-            IsDocked = false;
-        }
-
-        private void Awake()
-        {
-            _rb = GetComponent<Rigidbody>();
-            _rb.isKinematic = true;
-            _currentYaw = transform.eulerAngles.y;
-            EnsureOceanController();
-            float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
-            _baseY = transform.position.y - oceanOffset;
-            Debug.Log($"[BoatController] Awake on '{name}'. Initial Pos={transform.position}, Yaw={_currentYaw}, _baseY={_baseY:F2}");
-        }
-
-        private void EnsureOceanController()
-        {
-            if (OceanController.Instance == null)
-            {
-                var oceanObj = GameObject.Find("Ocean");
-                if (oceanObj != null && oceanObj.GetComponent<OceanController>() == null)
-                {
-                    oceanObj.AddComponent<OceanController>();
-                }
-            }
-        }
-
-        private void Start()
-        {
-            if (autoDockOnStart)
-            {
-                Dock targetDock = startingDock;
-                if (targetDock == null)
-                {
-                    var docks = Object.FindObjectsByType<Dock>(FindObjectsSortMode.None);
-                    float closestDist = float.MaxValue;
-                    foreach (var d in docks)
-                    {
-                        if (d == null) continue;
-                        Transform b = d.Berth;
-                        float dist = Vector3.Distance(transform.position, b != null ? b.position : d.transform.position);
-                        if (dist < closestDist)
-                        {
-                            closestDist = dist;
-                            targetDock = d;
-                        }
-                    }
-                }
-
-                if (targetDock != null)
-                {
-                    DockTo(targetDock);
-                }
-            }
-
-            var gm = GameManager.Instance;
-            if (gm != null)
-            {
-                // Register this callback to receive events when the game state changes.
-                gm.StateChanged += OnStateChanged;
-                OnStateChanged(gm.CurrentState);
-            }
-        }
-
-        private void OnDestroy()
-        {
-            if (GameManager.Instance != null)
-                // Unregister the callback.
-                GameManager.Instance.StateChanged -= OnStateChanged;
-        }
-
-        private void OnStateChanged(GameState state) => _piloting = state == GameState.Piloting;
-
         private void FixedUpdate()
         {
             Vector2 input = _piloting && InputReader.Instance != null ? InputReader.Instance.MoveInput : Vector2.zero;
 
-            // Smooth rotational acceleration & coasting turn inertia
+            // Steering yaw update
             float targetAngularVel = input.x * TurnSpeed;
             float turnRate = Mathf.Abs(input.x) > 0.01f ? AngularAcceleration : AngularDeceleration;
             _currentAngularVelocity = Mathf.MoveTowards(_currentAngularVelocity, targetAngularVel, turnRate * Time.fixedDeltaTime);
@@ -227,27 +222,11 @@ namespace LittleTrawling.Vehicles
                 _currentYaw += _currentAngularVelocity * Time.fixedDeltaTime;
             }
 
-            // Apply steering yaw + ocean wave rocking pitch/roll
-            float roll = OceanController.Instance != null ? OceanController.Instance.CurrentRoll : 0f;
-            float pitch = OceanController.Instance != null ? OceanController.Instance.CurrentPitch : 0f;
-            Quaternion targetRotation = Quaternion.Euler(pitch, _currentYaw, roll);
-            _rb.MoveRotation(targetRotation);
+            _rb.MoveRotation(CalculateWaveRotation());
 
-            // Smooth linear speed acceleration, braking, and long water gliding deceleration
-            float targetSpeed = 0f;
-            float accelRate = Deceleration;
-
-            if (input.y > 0.01f)
-            {
-                targetSpeed = input.y * MaxSpeed;
-                accelRate = Acceleration;
-            }
-            else if (input.y < -0.01f)
-            {
-                // Prevent reversing
-                targetSpeed = 0f;
-                accelRate = Acceleration;
-            }
+            // Linear speed update
+            float targetSpeed = input.y > 0.01f ? input.y * MaxSpeed : 0f;
+            float accelRate = input.y > 0.01f ? Acceleration : Deceleration;
 
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, accelRate * Time.fixedDeltaTime);
             _currentSpeed = Mathf.Max(0f, _currentSpeed);
@@ -257,8 +236,6 @@ namespace LittleTrawling.Vehicles
             if (Mathf.Abs(_currentSpeed) > 0.0001f)
             {
                 Vector3 moveDelta = ForwardDirection * _currentSpeed * Time.fixedDeltaTime;
-
-                // Prevent the boat from driving on land
                 if (!WouldHitLand(_rb.position, moveDelta))
                 {
                     nextPos += moveDelta;
@@ -269,15 +246,8 @@ namespace LittleTrawling.Vehicles
                 }
             }
 
-            // Match ocean bobbing Y position
             float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
             nextPos.y = _baseY + oceanOffset;
-
-            _fixedUpdateCount++;
-            if (_fixedUpdateCount == 1)
-            {
-                Debug.Log($"[BoatController] First FixedUpdate post-dock: Pos={_rb.position}, Rot={_rb.rotation.eulerAngles}, IsDocked={IsDocked}");
-            }
 
             _rb.MovePosition(nextPos);
         }

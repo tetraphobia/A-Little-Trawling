@@ -45,21 +45,16 @@ namespace LittleTrawling.Environment
 
         private void InitialSpawn()
         {
-            // Debug.Log($"[FishSpawner] InitialSpawn starting... Target maxSchools={maxSchools}, spawnRadius={spawnRadius}m");
-            int spawnedCount = 0;
             for (int i = 0; i < maxSchools; i++)
             {
-                if (TrySpawnSchool()) spawnedCount++;
+                TrySpawnSchool();
             }
-            // Debug.Log($"[FishSpawner] InitialSpawn complete! Successfully spawned {spawnedCount}/{maxSchools} fish schools.");
         }
 
         private void Update()
         {
-            // Clean up missing/destroyed schools
             _activeSchools.RemoveAll(s => s == null);
 
-            // Replenish schools if below target count
             if (_activeSchools.Count < maxSchools)
             {
                 TrySpawnSchool();
@@ -77,7 +72,6 @@ namespace LittleTrawling.Environment
                 Vector2 circle = Random.insideUnitCircle * spawnRadius;
                 Vector3 candidatePos = new Vector3(center.x + circle.x, 0f, center.z + circle.y);
 
-                // Reject if candidate position is too close to land or dock
                 if (IsPositionOnLandOrDock(candidatePos))
                 {
                     continue;
@@ -87,28 +81,24 @@ namespace LittleTrawling.Environment
                 schoolObj.transform.position = candidatePos;
                 var school = schoolObj.AddComponent<FishSchool>();
                 _activeSchools.Add(school);
-                // Debug.Log($"[FishSpawner] Successfully spawned school #{_activeSchools.Count} at {candidatePos}");
                 return true;
             }
 
-            // Debug.LogWarning($"[FishSpawner] Failed to find valid spawn location after 25 attempts! Active schools count: {_activeSchools.Count}");
             return false;
         }
 
         private bool IsPositionOnLandOrDock(Vector3 pos)
         {
             Vector3 origin = pos + Vector3.up * 50f;
-            if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 100f))
+            if (Physics.SphereCast(origin, landSafetyRadius, Vector3.down, out RaycastHit hit, 100f))
             {
                 if (hit.collider == null || hit.collider.isTrigger) return false;
 
-                // Reject if near dock
                 if (hit.collider.name.Contains("Dock") || hit.collider.GetComponentInParent<Dock>() != null)
                 {
                     return true;
                 }
 
-                // Reject if terrain/mesh elevation is above water level (y > 0.3m = Island / Shore)
                 if (hit.point.y > 0.3f)
                 {
                     return true;

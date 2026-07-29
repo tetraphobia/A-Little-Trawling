@@ -17,10 +17,12 @@ namespace LittleTrawling.Core
         public Vector2 LookInput { get; private set; }
         public bool CastHeld { get; private set; }
         public bool CameraLookHeld { get; private set; }
+        public bool SprintHeld { get; private set; }
 
         public event Action CastPressed;
         public event Action CastReleased;
         public event Action InteractPressed;
+        public event Action JumpPressed;
 
         private void Awake()
         {
@@ -47,21 +49,66 @@ namespace LittleTrawling.Core
             _input.Gameplay.Cast.performed         += OnCastDown;
             _input.Gameplay.Cast.canceled          += OnCastUp;
             _input.Gameplay.Interact.performed     += OnInteract;
+
+            TryBindSprintAndJump();
+        }
+
+        private void TryBindSprintAndJump()
+        {
+            try
+            {
+                var sprintAction = _input.Gameplay.Get().FindAction("Sprint");
+                if (sprintAction != null)
+                {
+                    sprintAction.performed += OnSprintDown;
+                    sprintAction.canceled  += OnSprintUp;
+                }
+
+                var jumpAction = _input.Gameplay.Get().FindAction("Jump");
+                if (jumpAction != null)
+                {
+                    jumpAction.performed += OnJumpDown;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[InputReader] Sprint/Jump binding info: {ex.Message}");
+            }
         }
 
         private void OnDisable()
         {
-            _input.Gameplay.Move.performed        -= OnMove;
-            _input.Gameplay.Move.canceled          -= OnMove;
-            _input.Gameplay.Look.performed         -= OnLook;
-            _input.Gameplay.Look.canceled          -= OnLook;
-            _input.Gameplay.CameraLook.performed   -= OnCameraLookDown;
-            _input.Gameplay.CameraLook.canceled    -= OnCameraLookUp;
-            _input.Gameplay.Cast.performed         -= OnCastDown;
-            _input.Gameplay.Cast.canceled          -= OnCastUp;
-            _input.Gameplay.Interact.performed     -= OnInteract;
+            if (_input != null)
+            {
+                _input.Gameplay.Move.performed        -= OnMove;
+                _input.Gameplay.Move.canceled          -= OnMove;
+                _input.Gameplay.Look.performed         -= OnLook;
+                _input.Gameplay.Look.canceled          -= OnLook;
+                _input.Gameplay.CameraLook.performed   -= OnCameraLookDown;
+                _input.Gameplay.CameraLook.canceled    -= OnCameraLookUp;
+                _input.Gameplay.Cast.performed         -= OnCastDown;
+                _input.Gameplay.Cast.canceled          -= OnCastUp;
+                _input.Gameplay.Interact.performed     -= OnInteract;
 
-            _input.Gameplay.Disable();
+                try
+                {
+                    var sprintAction = _input.Gameplay.Get().FindAction("Sprint");
+                    if (sprintAction != null)
+                    {
+                        sprintAction.performed -= OnSprintDown;
+                        sprintAction.canceled  -= OnSprintUp;
+                    }
+
+                    var jumpAction = _input.Gameplay.Get().FindAction("Jump");
+                    if (jumpAction != null)
+                    {
+                        jumpAction.performed -= OnJumpDown;
+                    }
+                }
+                catch { }
+
+                _input.Gameplay.Disable();
+            }
         }
 
         private void OnMove(InputAction.CallbackContext ctx) => MoveInput = ctx.ReadValue<Vector2>();
@@ -69,6 +116,10 @@ namespace LittleTrawling.Core
 
         private void OnCameraLookDown(InputAction.CallbackContext ctx) => CameraLookHeld = true;
         private void OnCameraLookUp(InputAction.CallbackContext ctx) => CameraLookHeld = false;
+
+        private void OnSprintDown(InputAction.CallbackContext ctx) => SprintHeld = true;
+        private void OnSprintUp(InputAction.CallbackContext ctx) => SprintHeld = false;
+        private void OnJumpDown(InputAction.CallbackContext ctx) => JumpPressed?.Invoke();
 
         private void OnCastDown(InputAction.CallbackContext ctx)
         {

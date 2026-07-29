@@ -23,12 +23,6 @@ namespace LittleTrawling.Environment
 
         public Transform Berth => berth != null ? berth : transform;
 
-        private void Start()
-        {
-            Transform b = Berth;
-            Debug.Log($"[Dock] '{name}' initialized. Dock WorldPos={transform.position}, Berth Name='{b.name}', Berth WorldPos={b.position}, Berth LocalPos={b.localPosition}, Berth Rot={b.eulerAngles}");
-        }
-
         public Collider Hitbox
         {
             get
@@ -45,7 +39,9 @@ namespace LittleTrawling.Environment
                         }
                     }
                     if (dockingHitbox == null)
+                    {
                         dockingHitbox = GetComponent<Collider>() ?? GetComponentInChildren<Collider>();
+                    }
                 }
                 return dockingHitbox;
             }
@@ -58,19 +54,6 @@ namespace LittleTrawling.Environment
             {
                 _occupyingColliders.Add(other);
                 boat.CurrentDockZone = this;
-            }
-        }
-
-        private void OnTriggerStay(Collider other)
-        {
-            var boat = other.GetComponentInParent<BoatController>() ?? other.GetComponent<BoatController>();
-            if (boat != null)
-            {
-                _occupyingColliders.Add(other);
-                if (boat.CurrentDockZone != this)
-                {
-                    boat.CurrentDockZone = this;
-                }
             }
         }
 
@@ -95,7 +78,7 @@ namespace LittleTrawling.Environment
             _occupyingColliders.RemoveWhere(c => c == null || !c.enabled);
             if (_occupyingColliders.Count > 0) return true;
 
-            // 2. Check Hitbox collider bounds (searches self and children)
+            // 2. Check Hitbox collider bounds
             Collider col = Hitbox;
             if (col != null && col.enabled)
             {
@@ -110,11 +93,10 @@ namespace LittleTrawling.Environment
                         return true;
                     }
                 }
-
                 return false;
             }
 
-            // 3. Fallback: Check proximity to Berth transform (only when no Hitbox collider exists)
+            // 3. Fallback proximity check
             Transform targetBerth = Berth;
             if (targetBerth != null)
             {

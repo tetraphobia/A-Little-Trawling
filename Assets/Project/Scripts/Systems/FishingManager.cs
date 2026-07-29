@@ -21,6 +21,8 @@ namespace LittleTrawling.Systems
         public event System.Action OnFishingCompleted;
         public event System.Action OnFishingFailed;
 
+        private bool _enteredWalkingThisFrame;
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -31,6 +33,48 @@ namespace LittleTrawling.Systems
             Instance = this;
 
             LoadFishCatalog();
+        }
+
+        private void Start()
+        {
+            var gm = GameManager.Instance;
+            if (gm != null)
+            {
+                gm.StateChanged += OnStateChanged;
+            }
+
+            if (InputReader.Instance != null)
+            {
+                InputReader.Instance.InteractPressed += OnInteract;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.StateChanged -= OnStateChanged;
+            }
+
+            if (InputReader.Instance != null)
+            {
+                InputReader.Instance.InteractPressed -= OnInteract;
+            }
+
+            if (Instance == this) Instance = null;
+        }
+
+        private void OnStateChanged(GameState state)
+        {
+            if (state == GameState.Walking)
+            {
+                _enteredWalkingThisFrame = true;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            _enteredWalkingThisFrame = false;
         }
 
         private void LoadFishCatalog()
@@ -53,46 +97,43 @@ namespace LittleTrawling.Systems
             var loaded = Resources.FindObjectsOfTypeAll<Fish>();
             if (loaded != null) fishPool.AddRange(loaded);
 #endif
-        }
 
-        private bool _enteredWalkingThisFrame;
-
-        private void Start()
-        {
-            var gm = GameManager.Instance;
-            if (gm != null)
+            // Ensure fallback fish species if pool is empty
+            if (fishPool.Count == 0)
             {
-                gm.StateChanged += OnStateChanged;
-            }
-
-            if (InputReader.Instance != null)
-            {
-                InputReader.Instance.InteractPressed += OnInteract;
+                EnsureFallbackFishCatalog();
             }
         }
 
-        private void OnDestroy()
+        private void EnsureFallbackFishCatalog()
         {
-            if (GameManager.Instance != null)
-                GameManager.Instance.StateChanged -= OnStateChanged;
+            var trout = ScriptableObject.CreateInstance<Fish>();
+            trout.displayName = "Rainbow Trout";
+            trout.minSize = 0.3f;
+            trout.maxSize = 0.7f;
+            trout.minWeight = 0.5f;
+            trout.maxWeight = 2.5f;
+            trout.baseValue = 20;
 
-            if (InputReader.Instance != null)
-                InputReader.Instance.InteractPressed -= OnInteract;
+            var salmon = ScriptableObject.CreateInstance<Fish>();
+            salmon.displayName = "Atlantic Salmon";
+            salmon.minSize = 0.5f;
+            salmon.maxSize = 1.1f;
+            salmon.minWeight = 2.0f;
+            salmon.maxWeight = 6.0f;
+            salmon.baseValue = 35;
 
-            if (Instance == this) Instance = null;
-        }
+            var bass = ScriptableObject.CreateInstance<Fish>();
+            bass.displayName = "Largemouth Bass";
+            bass.minSize = 0.25f;
+            bass.maxSize = 0.6f;
+            bass.minWeight = 0.4f;
+            bass.maxWeight = 2.0f;
+            bass.baseValue = 15;
 
-        private void OnStateChanged(GameState state)
-        {
-            if (state == GameState.Walking)
-            {
-                _enteredWalkingThisFrame = true;
-            }
-        }
-
-        private void LateUpdate()
-        {
-            _enteredWalkingThisFrame = false;
+            fishPool.Add(trout);
+            fishPool.Add(salmon);
+            fishPool.Add(bass);
         }
 
         private void OnInteract()
@@ -103,15 +144,21 @@ namespace LittleTrawling.Systems
             // Ignore interact press if state just transitioned to Walking in this exact frame
             if (_enteredWalkingThisFrame) return;
 
-            // Find nearest fish school in range
+            // Find nearest valid fish school in range
             var schools = Object.FindObjectsByType<FishSchool>(FindObjectsSortMode.None);
             FishSchool targetSchool = null;
+            float closestDist = float.MaxValue;
+
             foreach (var s in schools)
             {
                 if (s != null && s.CanFish())
                 {
-                    targetSchool = s;
-                    break;
+                    float dist = Vector3.Distance(transform.position, s.transform.position);
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        targetSchool = s;
+                    }
                 }
             }
 
@@ -133,7 +180,7 @@ namespace LittleTrawling.Systems
 
             OnFishingStarted?.Invoke(school);
 
-            // Execute minigame (for now, always succeeds instantly)
+            // Execute fishing completion
             ExecuteMinigameSuccess(school);
         }
 
@@ -144,20 +191,13 @@ namespace LittleTrawling.Systems
                 LoadFishCatalog();
             }
 
-            if (fishPool.Count == 0)
-            {
-                Debug.LogWarning("[FishingManager] No Fish ScriptableObject assets found!");
-                EndFishing(false);
-                return;
-            }
-
             // Roll random fish species
             Fish species = fishPool[Random.Range(0, fishPool.Count)];
             float size = species.RollSize();
             float weight = species.RollWeight();
             float sizeCm = size * 100f; // Convert meters to cm for UI
 
-            int goldEarned = Mathf.RoundToInt(species.baseValue * (size / species.minSize));
+            int goldEarned = Mathf.RoundToInt(species.baseValue * (size / Mathf.Max(0.01f, species.minSize)));
 
             // Award gold to Wallet
             if (Wallet.Instance != null)
@@ -168,7 +208,7 @@ namespace LittleTrawling.Systems
             // Consume one fish from the school
             school.ConsumeFish();
 
-            // Trigger success events
+            // Trigger catch UI & completion events
             OnFishCaught?.Invoke(species, sizeCm, weight, goldEarned);
             OnFishingCompleted?.Invoke();
 

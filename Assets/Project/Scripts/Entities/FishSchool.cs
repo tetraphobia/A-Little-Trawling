@@ -10,13 +10,14 @@ namespace LittleTrawling.Entities
     public class FishSchool : MonoBehaviour
     {
         [Header("School Settings")]
-        [Tooltip("Max interaction distance from the boat.")]
-        [SerializeField] private float interactRadius = 6.0f;
+        [Tooltip("Max interaction distance from the boat or player.")]
+        [SerializeField] private float interactRadius = 15.0f;
 
         [Tooltip("Number of fish remaining in this school before it despawns.")]
         [SerializeField] private int fishRemaining = 4;
 
         private BoatController _boat;
+        private PlayerController _player;
         private bool _isBoatNear;
         private Transform _shadowContainer;
 
@@ -26,29 +27,30 @@ namespace LittleTrawling.Entities
         private void Start()
         {
             if (fishRemaining <= 0)
+            {
                 fishRemaining = Random.Range(3, 6);
-
+            }
             CreateFishShadows();
-            // Debug.Log($"[FishSchool] Initialized FishSchool at world position {transform.position} with {fishRemaining} fish remaining.");
         }
 
         private void CreateFishShadows()
         {
-            // Create a parent object for fish shadows
             var container = new GameObject("Shadows");
             container.transform.SetParent(transform, false);
             _shadowContainer = container.transform;
 
             Shader shadowShader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Legacy Shaders/Diffuse");
 
-            // 1. Water Ripple Ring on Surface
+            // Water Ripple Ring on Surface
             var ripple = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             ripple.name = "WaterRipple";
             ripple.transform.SetParent(transform, false);
             ripple.transform.localPosition = new Vector3(0f, 0.05f, 0f);
             ripple.transform.localScale = new Vector3(6f, 0.01f, 6f);
+
             var colRipple = ripple.GetComponent<Collider>();
             if (colRipple != null) Destroy(colRipple);
+
             var mrRipple = ripple.GetComponent<MeshRenderer>();
             if (mrRipple != null)
             {
@@ -56,7 +58,7 @@ namespace LittleTrawling.Entities
                 mrRipple.material.color = new Color(0.2f, 0.7f, 0.9f, 0.35f);
             }
 
-            // 2. Swimming Fish Shadow Quads
+            // Swimming Fish Shadow Quads
             int count = Random.Range(5, 9);
             for (int i = 0; i < count; i++)
             {
@@ -64,17 +66,14 @@ namespace LittleTrawling.Entities
                 shadow.name = $"FishShadow_{i}";
                 shadow.transform.SetParent(_shadowContainer, false);
 
-                // Flatten and position slightly above water surface
                 shadow.transform.localRotation = Quaternion.Euler(90f, Random.Range(0f, 360f), 0f);
                 Vector2 circle = Random.insideUnitCircle * 2.8f;
                 shadow.transform.localPosition = new Vector3(circle.x, 0.12f, circle.y);
                 shadow.transform.localScale = new Vector3(0.7f, 1.6f, 1f);
 
-                // Remove collider
                 var col = shadow.GetComponent<Collider>();
                 if (col != null) Destroy(col);
 
-                // Material color (vivid dark navy fish silhouette)
                 var mr = shadow.GetComponent<MeshRenderer>();
                 if (mr != null)
                 {
@@ -86,33 +85,38 @@ namespace LittleTrawling.Entities
 
         private void Update()
         {
-            // Rotate shadows to simulate swimming underwater
             if (_shadowContainer != null)
             {
                 _shadowContainer.Rotate(Vector3.up, 30f * Time.deltaTime);
             }
 
-            // Track distance to player boat
             if (_boat == null)
             {
                 _boat = Object.FindAnyObjectByType<BoatController>();
             }
 
+            if (_player == null)
+            {
+                _player = Object.FindAnyObjectByType<PlayerController>();
+            }
+
+            // Calculate 2D planar distance (XZ) to boat or player
+            Vector2 schoolXZ = new Vector2(transform.position.x, transform.position.z);
+            float minDist = float.MaxValue;
+
             if (_boat != null)
             {
-                float dist = Vector3.Distance(_boat.transform.position, transform.position);
-                bool wasNear = _isBoatNear;
-                _isBoatNear = (dist <= interactRadius);
+                Vector2 boatXZ = new Vector2(_boat.transform.position.x, _boat.transform.position.z);
+                minDist = Mathf.Min(minDist, Vector2.Distance(schoolXZ, boatXZ));
+            }
 
-                if (_isBoatNear && !wasNear)
-                {
-                    // Debug.Log($"[FishSchool] Boat entered interaction radius for school at {transform.position} (dist={dist:F2}m)");
-                }
-            }
-            else
+            if (_player != null)
             {
-                _isBoatNear = false;
+                Vector2 playerXZ = new Vector2(_player.transform.position.x, _player.transform.position.z);
+                minDist = Mathf.Min(minDist, Vector2.Distance(schoolXZ, playerXZ));
             }
+
+            _isBoatNear = minDist <= interactRadius;
         }
 
         private void OnDrawGizmos()
@@ -138,15 +142,14 @@ namespace LittleTrawling.Entities
 
         private void OnGUI()
         {
-            var gm = GameManager.Instance;
-            if (!_isBoatNear || IsDepleted || gm == null || !gm.IsState(GameState.Walking)) return;
+            if (!CanFish()) return;
 
-            int width = 300;
-            int height = 40;
-            Rect rect = new Rect((Screen.width - width) / 2f, Screen.height - 150, width, height);
+            int width = 320;
+            int height = 45;
+            Rect rect = new Rect((Screen.width - width) / 2f, Screen.height - 140, width, height);
 
             GUI.Box(rect, "");
-            GUI.Label(rect, "<size=16><b>Interact to Fish</b></size>", new GUIStyle(GUI.skin.label)
+            GUI.Label(rect, "<size=17><b>[E] Cast Fishing Rod</b></size>", new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
                 richText = true

@@ -109,7 +109,6 @@ namespace LittleTrawling.UI
 
         private void OnStateChanged(GameState state)
         {
-            Debug.Log($"[ShopUI] OnStateChanged received state: {state}");
             bool wasOpen = _isOpen;
             _isOpen = (state == GameState.Shopping);
             if (_isOpen && !wasOpen)
@@ -127,7 +126,6 @@ namespace LittleTrawling.UI
 
         private void OnInteractPressed()
         {
-            Debug.Log($"[ShopUI] OnInteractPressed event received. _isOpen: {_isOpen}, openedThisFrame: {_openedThisFrame}");
             if (_isOpen && !_openedThisFrame)
             {
                 CloseShop();
