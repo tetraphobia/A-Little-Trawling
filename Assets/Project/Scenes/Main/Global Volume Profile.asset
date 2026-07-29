@@ -28,229 +28,229 @@ MonoBehaviour:
   m_EditorClassIdentifier: FronkonGames.Retro.CRTTV::FronkonGames.Retro.CRTTV.CRTTVVolume
   active: 1
   intensity:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0.692
     min: 0
     max: 1
   shadowmaskStrength:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   shadowmaskLuminosity:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
     min: 0
     max: 2
   shadowmaskScale:
-    m_OverrideState: 0
-    m_Value: 0.5
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   shadowmaskVerticalGapHardness:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0.1
     min: 0
     max: 1
   shadowmaskHorizontalGapHardness:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0.8
     min: 0
     max: 1
   shadowmaskColorOffset:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {x: 0, y: -0.3, z: -0.6}
   fishEyeStrength:
-    m_OverrideState: 0
-    m_Value: 0.2
+    m_OverrideState: 1
+    m_Value: 0
     min: -1
     max: 5
   fishEyeZoom:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {x: 1, y: 1}
   distortion:
-    m_OverrideState: 0
-    m_Value: 0.17
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 2
   distortionSpeed:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0
     min: -10
     max: 10
   distortionAmplitude:
-    m_OverrideState: 0
-    m_Value: 2
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 10
   vignetteSmoothness:
-    m_OverrideState: 0
-    m_Value: 0.7
+    m_OverrideState: 1
+    m_Value: 1.416
     min: 0
     max: 2
   vignetteRounding:
-    m_OverrideState: 0
-    m_Value: 0.5
+    m_OverrideState: 1
+    m_Value: 0.778
     min: 0
     max: 1
   vignetteBorders:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {x: 0, y: 0}
   shineStrength:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0.3
     min: 0
     max: 1
   shineColor:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
   shinePosition:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {x: 0.5, y: 1}
   rgbOffsetStrength:
-    m_OverrideState: 0
-    m_Value: 0.25
+    m_OverrideState: 1
+    m_Value: 0.184
     min: 0
     max: 1
   colorBleedingStrength:
-    m_OverrideState: 0
-    m_Value: 0.25
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   colorBleedingDistance:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0.5
     min: -1
     max: 1
   colorCurves:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {r: 0.95, g: 1.05, b: 0.95, a: 1}
   gammaColor:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {r: 0.9, g: 0.7, b: 1.2, a: 1}
   scanlines:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   scanlinesCount:
-    m_OverrideState: 0
-    m_Value: 1.25
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 2
   scanlinesVelocity:
-    m_OverrideState: 0
-    m_Value: 3.5
+    m_OverrideState: 1
+    m_Value: 0
     min: -10
     max: 10
   interferenceStrength:
-    m_OverrideState: 0
-    m_Value: 0.2
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   interferencePeakStrength:
-    m_OverrideState: 0
-    m_Value: 0.3
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   interferencePeakPosition:
-    m_OverrideState: 0
-    m_Value: 0.2
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   shakeStrength:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   shakeRate:
-    m_OverrideState: 0
-    m_Value: 0.2
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   movementStrength:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   movementRate:
-    m_OverrideState: 0
-    m_Value: 0.2
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   movementSpeed:
-    m_OverrideState: 0
-    m_Value: 0.4
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   grain:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
     min: 0
     max: 1
   staticNoise:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
     min: 0
     max: 1
   barStrength:
-    m_OverrideState: 0
-    m_Value: 0.1
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   barHeight:
-    m_OverrideState: 0
-    m_Value: 6
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 10
   barSpeed:
-    m_OverrideState: 0
-    m_Value: 4
+    m_OverrideState: 1
+    m_Value: -10
     min: -10
     max: 10
   barOverflow:
-    m_OverrideState: 0
-    m_Value: 1.2
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 4
   flickerStrength:
-    m_OverrideState: 0
-    m_Value: 0.1
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 1
   flickerSpeed:
-    m_OverrideState: 0
-    m_Value: 50
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 100
   brightness:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
     min: -1
     max: 1
   contrast:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
     min: 0
     max: 10
   gamma:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
     min: 0.1
     max: 10
   hue:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
     min: 0
     max: 1
   saturation:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 1.257
     min: 0
     max: 2
   affectSceneView:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
   useScaledTime:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1

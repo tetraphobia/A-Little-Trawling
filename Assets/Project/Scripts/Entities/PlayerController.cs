@@ -143,7 +143,6 @@ namespace LittleTrawling.Entities
 
             Vector3 finalMove = (moveDir + Vector3.up * _verticalVel) * Time.deltaTime + platformDisplacement;
             _cc.Move(finalMove);
-            Debug.Log($"[JUMP] PostMove: pos.y={transform.position.y:F3}, _verticalVel={_verticalVel:F3}, cc.isGrounded={_cc.isGrounded}, _isGroundedOnDeck={_isGroundedOnDeck}, finalMove.y={finalMove.y:F4}, platDisp.y={platformDisplacement.y:F4}");
 
             if (moveDir.sqrMagnitude > 0.001f)
             {
@@ -232,7 +231,6 @@ namespace LittleTrawling.Entities
         {
             if (_cc.isGrounded && _verticalVel < 0f)
             {
-                Debug.Log($"[JUMP] CC.isGrounded reset: _verticalVel {_verticalVel:F3} -> -2f");
                 _verticalVel = -2f;
                 _isGroundedOnDeck = true;
             }
@@ -259,9 +257,13 @@ namespace LittleTrawling.Entities
                 {
                     isOnBoat = true;
 
-                    if (transform.parent != _boatController.transform)
+                    // Automatically parent to the BoatBob mesh if present, or boat root
+                    var boatBob = _boatController.GetComponentInChildren<BoatBob>();
+                    Transform targetParent = boatBob != null ? boatBob.transform : _boatController.transform;
+
+                    if (transform.parent != targetParent)
                     {
-                        transform.SetParent(_boatController.transform);
+                        transform.SetParent(targetParent);
                         if (_boatRigidbody != null)
                         {
                             _lastBoatPosition = _boatRigidbody.position;
@@ -275,12 +277,9 @@ namespace LittleTrawling.Entities
                         float heightDiff = deckHeightY - transform.position.y;
 
                         // Only snap when player is at or slightly above the deck surface.
-                        // heightDiff < 0 means player is above deck (normal standing).
-                        // heightDiff > 0.05 means player is below deck — NOT grounded, let gravity work.
                         if (heightDiff <= 0.05f && heightDiff >= -0.3f)
                         {
                             float snappedVel = Mathf.Clamp(heightDiff / Time.deltaTime, -4.0f, 0.0f);
-                            Debug.Log($"[JUMP] DeckSnap: deckY={deckHeightY:F3}, playerY={transform.position.y:F3}, heightDiff={heightDiff:F3}, vel {_verticalVel:F3} -> {snappedVel:F3}");
                             _verticalVel = snappedVel;
                             _isGroundedOnDeck = true;
                         }
@@ -299,10 +298,10 @@ namespace LittleTrawling.Entities
             }
 
             // If not hitting boat collider, ensure unparented
-            if (!isOnBoat && transform.parent != null && transform.parent == _boatController?.transform)
+            if (!isOnBoat && transform.parent != null && _boatController != null && (transform.parent == _boatController.transform || transform.parent.IsChildOf(_boatController.transform)))
             {
                 var gm = GameManager.Instance;
-                if (gm != null && !gm.IsState(GameState.Walking))
+                if (gm != null && !gm.IsState(GameState.Piloting))
                 {
                     transform.SetParent(null);
                 }
@@ -319,7 +318,10 @@ namespace LittleTrawling.Entities
             if (_boatController == null) _boatController = Object.FindAnyObjectByType<BoatController>();
             if (_boatController != null && anchor.IsChildOf(_boatController.transform))
             {
-                transform.SetParent(_boatController.transform);
+                var boatBob = _boatController.GetComponentInChildren<BoatBob>();
+                Transform targetParent = boatBob != null ? boatBob.transform : _boatController.transform;
+
+                transform.SetParent(targetParent);
                 if (_boatRigidbody != null)
                 {
                     _lastBoatPosition = _boatRigidbody.position;
