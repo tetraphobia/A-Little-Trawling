@@ -15,9 +15,9 @@ MonoBehaviour:
   displayName: Basic Engine
   cost: 1000
   tier: 0
-  maxSpeed: 3
+  maxSpeed: 5
   acceleration: 0.5
-  deceleration: 0.8
-  turnSpeed: 45
-  angularAcceleration: 80
-  angularDeceleration: 35
+  deceleration: 2
+  turnSpeed: 30
+  angularAcceleration: 8
+  angularDeceleration: 12

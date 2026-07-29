@@ -393,7 +393,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e02630ebd254fb47b490c0edbb9ab99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Vehicles.BoatController
-  engine: {fileID: 11400000, guid: 73491d76a1a25914183cbdac971121c3, type: 2}
+  engine: {fileID: 11400000, guid: 2dc80825600eeaa4487a03b3b043f46f, type: 2}
   forwardAxis: {x: 1, y: 0, z: 0}
   autoDockOnStart: 1
   startingDock: {fileID: 0}
@@ -782,6 +782,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 5711051c0a805bb449ceab7500bb34ca, type: 3}
       propertyPath: m_Name
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 5711051c0a805bb449ceab7500bb34ca, type: 3}
+      propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 5711051c0a805bb449ceab7500bb34ca, type: 3}
@@ -31850,7 +31854,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 1.5
+  m_Radius: 3
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
