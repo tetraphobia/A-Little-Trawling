@@ -1,2 +1,3 @@
 ThirdParty/*
 !ThirdParty/.gitkeep
+!ThirdParty/README.md
