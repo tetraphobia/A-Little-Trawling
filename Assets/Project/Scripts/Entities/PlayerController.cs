@@ -26,6 +26,9 @@ namespace LittleTrawling.Entities
         [Header("Animation")]
         [SerializeField] private Animator animator;
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
+        private static readonly int IsGroundedHash = Animator.StringToHash("IsGrounded");
+        private static readonly int IsSprintingHash = Animator.StringToHash("IsSprinting");
+        private static readonly int JumpHash = Animator.StringToHash("Jump");
 
         public Rod Rod
         {
@@ -114,10 +117,18 @@ namespace LittleTrawling.Entities
         {
             if (!_active) return;
 
-            if (_cc.isGrounded || _isGroundedOnDeck)
+            bool isGrounded = _cc.isGrounded || _isGroundedOnDeck;
+            Debug.Log($"[JUMP] OnJumpPressed: cc.isGrounded={_cc.isGrounded}, _isGroundedOnDeck={_isGroundedOnDeck}, _verticalVel={_verticalVel:F3}, pos.y={transform.position.y:F3}");
+            if (isGrounded)
             {
                 _verticalVel = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
                 _isGroundedOnDeck = false;
+                Debug.Log($"[JUMP] Jumped! _verticalVel set to {_verticalVel:F3}");
+
+                if (animator != null)
+                {
+                    animator.SetTrigger(JumpHash);
+                }
             }
         }
 
@@ -130,7 +141,9 @@ namespace LittleTrawling.Entities
 
             ApplyDeckMeshHuggingAndParenting();
 
-            _cc.Move((moveDir + Vector3.up * _verticalVel) * Time.deltaTime + platformDisplacement);
+            Vector3 finalMove = (moveDir + Vector3.up * _verticalVel) * Time.deltaTime + platformDisplacement;
+            _cc.Move(finalMove);
+            Debug.Log($"[JUMP] PostMove: pos.y={transform.position.y:F3}, _verticalVel={_verticalVel:F3}, cc.isGrounded={_cc.isGrounded}, _isGroundedOnDeck={_isGroundedOnDeck}, finalMove.y={finalMove.y:F4}, platDisp.y={platformDisplacement.y:F4}");
 
             if (moveDir.sqrMagnitude > 0.001f)
             {
@@ -142,14 +155,33 @@ namespace LittleTrawling.Entities
             Vector3 currentEuler = transform.eulerAngles;
             transform.rotation = Quaternion.Euler(0f, currentEuler.y, 0f);
 
-            if (animator != null)
+            UpdateAnimator(moveDir);
+        }
+
+        private void UpdateAnimator(Vector3 moveDir)
+        {
+            if (animator == null) return;
+
+            bool isSprinting = InputReader.Instance != null && InputReader.Instance.SprintHeld;
+            float targetSpeed = isSprinting ? sprintSpeed : moveSpeed;
+            float speedMagnitude = new Vector2(moveDir.x, moveDir.z).magnitude;
+            float speedRatio = speedMagnitude / targetSpeed;
+
+            if (isSprinting && speedRatio > 0.1f)
             {
-                bool isSprinting = InputReader.Instance != null && InputReader.Instance.SprintHeld;
-                float targetSpeed = isSprinting ? sprintSpeed : moveSpeed;
-                float speedRatio = new Vector2(moveDir.x, moveDir.z).magnitude / targetSpeed;
-                if (isSprinting && speedRatio > 0.1f) speedRatio *= 1.5f;
-                animator.SetFloat(SpeedHash, speedRatio, 0.1f, Time.deltaTime);
+                speedRatio *= 2.0f; // Scale to 2.0 for Blend Trees where 0=Idle, 1=Walk, 2=Sprint
             }
+
+            bool isGrounded = _cc.isGrounded || _isGroundedOnDeck;
+
+            if (isGrounded)
+            {
+                animator.ResetTrigger(JumpHash);
+            }
+
+            animator.SetFloat(SpeedHash, speedRatio, 0.1f, Time.deltaTime);
+            animator.SetBool(IsSprintingHash, isSprinting && speedRatio > 0.1f);
+            animator.SetBool(IsGroundedHash, isGrounded);
         }
 
         private Vector3 CalculatePlatformDisplacement()
@@ -200,6 +232,7 @@ namespace LittleTrawling.Entities
         {
             if (_cc.isGrounded && _verticalVel < 0f)
             {
+                Debug.Log($"[JUMP] CC.isGrounded reset: _verticalVel {_verticalVel:F3} -> -2f");
                 _verticalVel = -2f;
                 _isGroundedOnDeck = true;
             }
@@ -226,7 +259,6 @@ namespace LittleTrawling.Entities
                 {
                     isOnBoat = true;
 
-                    // Ensure player is parented to boat when standing on deck and reset platform trackers
                     if (transform.parent != _boatController.transform)
                     {
                         transform.SetParent(_boatController.transform);
@@ -237,16 +269,19 @@ namespace LittleTrawling.Entities
                         }
                     }
 
-                    // Height snapping: NEVER allow positive upward launch velocity during ground snapping
                     if (_verticalVel <= 0f)
                     {
                         float deckHeightY = hit.point.y;
                         float heightDiff = deckHeightY - transform.position.y;
 
-                        if (Mathf.Abs(heightDiff) <= 0.6f)
+                        // Only snap when player is at or slightly above the deck surface.
+                        // heightDiff < 0 means player is above deck (normal standing).
+                        // heightDiff > 0.05 means player is below deck — NOT grounded, let gravity work.
+                        if (heightDiff <= 0.05f && heightDiff >= -0.3f)
                         {
-                            // Clamp velocity to downward/grounding only [ -4.0, 0.0 ] to prevent upward launch
-                            _verticalVel = Mathf.Clamp(heightDiff / Time.deltaTime, -4.0f, 0.0f);
+                            float snappedVel = Mathf.Clamp(heightDiff / Time.deltaTime, -4.0f, 0.0f);
+                            Debug.Log($"[JUMP] DeckSnap: deckY={deckHeightY:F3}, playerY={transform.position.y:F3}, heightDiff={heightDiff:F3}, vel {_verticalVel:F3} -> {snappedVel:F3}");
+                            _verticalVel = snappedVel;
                             _isGroundedOnDeck = true;
                         }
                     }
@@ -267,7 +302,7 @@ namespace LittleTrawling.Entities
             if (!isOnBoat && transform.parent != null && transform.parent == _boatController?.transform)
             {
                 var gm = GameManager.Instance;
-                if (gm != null && !gm.IsState(GameState.Piloting))
+                if (gm != null && !gm.IsState(GameState.Walking))
                 {
                     transform.SetParent(null);
                 }
