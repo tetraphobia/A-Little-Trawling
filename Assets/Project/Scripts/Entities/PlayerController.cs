@@ -28,6 +28,10 @@ namespace LittleTrawling.Entities
         [Tooltip("Local Z bounds (min, max) relative to the parent.")]
         [SerializeField] private Vector2 deckBoundsZ = new Vector2(-0.6f, 0.6f);
 
+        [Header("Animation")]
+        [SerializeField] private Animator animator;
+        private static readonly int SpeedHash = Animator.StringToHash("Speed");
+
         public Rod Rod
         {
             get => rod;
@@ -125,6 +129,14 @@ namespace LittleTrawling.Entities
                 Quaternion target = Quaternion.LookRotation(new Vector3(move.x, 0f, move.z));
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, target, turnSpeed * Time.deltaTime);
             }
+
+            // Animations
+            if (animator != null)
+            {
+                float speed = new Vector2(move.x, move.z).magnitude / moveSpeed;
+                animator.SetFloat(SpeedHash, speed, 0.1f, Time.deltaTime);
+            }
+
         }
 
         /// <summary>
