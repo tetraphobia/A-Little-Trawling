@@ -71,8 +71,7 @@ namespace LittleTrawling.Vehicles
             _rb.isKinematic = true;
             _currentYaw = transform.eulerAngles.y;
             EnsureOceanController();
-            float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
-            _baseY = transform.position.y - oceanOffset;
+            _baseY = transform.position.y;
         }
 
         private void Start()
@@ -116,12 +115,11 @@ namespace LittleTrawling.Vehicles
             Transform targetBerth = dock.Berth;
             if (targetBerth != null)
             {
-                float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
-                _baseY = targetBerth.position.y - oceanOffset;
+                _baseY = targetBerth.position.y;
                 _currentYaw = targetBerth.eulerAngles.y;
 
                 Vector3 targetPos = targetBerth.position;
-                targetPos.y = _baseY + oceanOffset;
+                targetPos.y = _baseY;
 
                 Quaternion targetRot = CalculateWaveRotation();
                 transform.SetPositionAndRotation(targetPos, targetRot);
@@ -174,9 +172,7 @@ namespace LittleTrawling.Vehicles
 
         private Quaternion CalculateWaveRotation()
         {
-            float roll = OceanController.Instance != null ? OceanController.Instance.CurrentRoll : 0f;
-            float pitch = OceanController.Instance != null ? OceanController.Instance.CurrentPitch : 0f;
-            return Quaternion.Euler(pitch, _currentYaw, roll);
+            return Quaternion.Euler(0f, _currentYaw, 0f);
         }
 
         private bool IsLandCollider(Collider col)
@@ -222,7 +218,7 @@ namespace LittleTrawling.Vehicles
                 _currentYaw += _currentAngularVelocity * Time.fixedDeltaTime;
             }
 
-            _rb.MoveRotation(CalculateWaveRotation());
+            _rb.MoveRotation(Quaternion.Euler(0f, _currentYaw, 0f));
 
             // Linear speed update
             float targetSpeed = input.y > 0.01f ? input.y * MaxSpeed : 0f;
@@ -246,8 +242,7 @@ namespace LittleTrawling.Vehicles
                 }
             }
 
-            float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
-            nextPos.y = _baseY + oceanOffset;
+            nextPos.y = _baseY;
 
             _rb.MovePosition(nextPos);
         }
