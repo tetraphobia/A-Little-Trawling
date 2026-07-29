@@ -29,7 +29,7 @@ namespace LittleTrawling.Entities
                 fishRemaining = Random.Range(3, 6);
 
             CreateFishShadows();
-            Debug.Log($"[FishSchool] Initialized FishSchool at world position {transform.position} with {fishRemaining} fish remaining.");
+            // Debug.Log($"[FishSchool] Initialized FishSchool at world position {transform.position} with {fishRemaining} fish remaining.");
         }
 
         private void CreateFishShadows()
@@ -106,7 +106,7 @@ namespace LittleTrawling.Entities
 
                 if (_isBoatNear && !wasNear)
                 {
-                    Debug.Log($"[FishSchool] Boat entered interaction radius for school at {transform.position} (dist={dist:F2}m)");
+                    // Debug.Log($"[FishSchool] Boat entered interaction radius for school at {transform.position} (dist={dist:F2}m)");
                 }
             }
             else

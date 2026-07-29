@@ -20,13 +20,6 @@ namespace LittleTrawling.Entities
         [SerializeField] private float turnSpeed = 720f;
         [SerializeField] private float gravity = -20f;
 
-        [Header("Deck Boundaries")]
-        [Tooltip("If true, clamps the player's position to stay on the boat deck when not docked.")]
-        [SerializeField] private bool restrictToDeck = true;
-        [Tooltip("Local X bounds (min, max) relative to the parent.")]
-        [SerializeField] private Vector2 deckBoundsX = new Vector2(-1.1f, 1.1f);
-        [Tooltip("Local Z bounds (min, max) relative to the parent.")]
-        [SerializeField] private Vector2 deckBoundsZ = new Vector2(-0.6f, 0.6f);
 
         [Header("Animation")]
         [SerializeField] private Animator animator;
@@ -45,17 +38,23 @@ namespace LittleTrawling.Entities
         private float _verticalVel;
         private Vector3 _lastBoatPosition;
 
+        private int _updateCount;
+        private bool _wasGrounded;
+
         private void Awake()
         {
             _cc = GetComponent<CharacterController>();
             // Track the boat's movement so that the player will move along with it even when not piloting.
             _boatRigidbody = GetComponentInParent<Rigidbody>();
             _boatController = GetComponentInParent<BoatController>();
+
+            Debug.Log($"[PlayerController] Awake. Parent={(transform.parent != null ? transform.parent.name : "null")}, WorldPos={transform.position}, LocalPos={transform.localPosition}, CC={(_cc != null ? "found" : "NULL")}, BoatRB={(_boatRigidbody != null ? _boatRigidbody.name : "NULL")}");
         }
 
         private void Start()
         {
             var gm = GameManager.Instance;
+            Debug.Log($"[PlayerController] Start. GameManager={(gm != null ? "found" : "NULL")}");
             if (gm != null)
             {
                 gm.StateChanged += OnStateChanged;
@@ -69,35 +68,71 @@ namespace LittleTrawling.Entities
                 GameManager.Instance.StateChanged -= OnStateChanged;
         }
 
+        private Quaternion _lastBoatRotation;
+
         private void OnStateChanged(GameState state)
         {
             _active = state == GameState.Walking;
             _verticalVel = 0f; // Reset gravity accumulator so player never gets pulled down through deck
             if (_active && _boatRigidbody != null)
+            {
                 _lastBoatPosition = _boatRigidbody.position;
+                _lastBoatRotation = _boatRigidbody.rotation;
+            }
+
+            // Hide the player avatar while piloting the boat
+            bool isVisible = state != GameState.Piloting;
+            SetVisibility(isVisible);
+
+            Debug.Log($"[PlayerController] OnStateChanged: New State={state}, Active={_active}, Visible={isVisible}");
+        }
+
+        private void SetVisibility(bool visible)
+        {
+            Renderer[] renderers = GetComponentsInChildren<Renderer>();
+            foreach (var r in renderers)
+            {
+                if (r != null) r.enabled = visible;
+            }
         }
 
         private void Update()
         {
             if (!_active || InputReader.Instance == null) return;
 
-            Vector3 boatDelta = Vector3.zero;
+            Vector3 platformDisplacement = Vector3.zero;
             if (_boatRigidbody != null)
             {
-                boatDelta = _boatRigidbody.position - _lastBoatPosition;
+                // Calculate translation delta
+                Vector3 boatPosDelta = _boatRigidbody.position - _lastBoatPosition;
+
+                // Calculate rotational displacement around boat center
+                Quaternion boatRotDelta = _boatRigidbody.rotation * Quaternion.Inverse(_lastBoatRotation);
+                Vector3 localPlayerPos = transform.position - _boatRigidbody.position;
+                Vector3 rotatedLocalPos = boatRotDelta * localPlayerPos;
+                Vector3 boatRotOffset = rotatedLocalPos - localPlayerPos;
+
+                platformDisplacement = boatPosDelta + boatRotOffset;
+
                 _lastBoatPosition = _boatRigidbody.position;
+                _lastBoatRotation = _boatRigidbody.rotation;
             }
 
             Vector2 input = InputReader.Instance.MoveInput;
 
             // Convert input into a direction relative to the camera.
             Camera cam = Camera.main;
-            Vector3 camFwd = cam.transform.forward;
-            Vector3 camRight = cam.transform.right;
-            camFwd.y = 0f;
-            camRight.y = 0f;
-            camFwd.Normalize();
-            camRight.Normalize();
+            Vector3 camFwd = Vector3.forward;
+            Vector3 camRight = Vector3.right;
+            if (cam != null)
+            {
+                camFwd = cam.transform.forward;
+                camRight = cam.transform.right;
+                camFwd.y = 0f;
+                camRight.y = 0f;
+                camFwd.Normalize();
+                camRight.Normalize();
+            }
 
             Vector3 planar = camRight * input.x + camFwd * input.y;
 
@@ -108,20 +143,30 @@ namespace LittleTrawling.Entities
             if (_cc.isGrounded && _verticalVel < 0f) _verticalVel = -2f;
             _verticalVel += gravity * Time.deltaTime;
 
-            _cc.Move((move + Vector3.up * _verticalVel) * Time.deltaTime + boatDelta);
-
-            // Clamp local position so player remains on top of the boat deck only when NOT docked
+            // Dynamic Mesh Surface Hugging (Active only while sailing / NOT docked)
             bool isDocked = _boatController != null && _boatController.IsDocked;
-            if (restrictToDeck && !isDocked && transform.parent != null)
+            if (!isDocked && transform.parent != null && _boatController != null)
             {
-                Vector3 localPos = transform.localPosition;
-                float clampedX = Mathf.Clamp(localPos.x, deckBoundsX.x, deckBoundsX.y);
-                float clampedZ = Mathf.Clamp(localPos.z, deckBoundsZ.x, deckBoundsZ.y);
-                if (localPos.x != clampedX || localPos.z != clampedZ)
+                Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
+                RaycastHit[] hits = Physics.RaycastAll(rayOrigin, Vector3.down, 2.0f);
+                foreach (var hit in hits)
                 {
-                    transform.localPosition = new Vector3(clampedX, localPos.y, clampedZ);
+                    if (hit.collider != null && !hit.collider.isTrigger && hit.collider.transform.IsChildOf(_boatController.transform))
+                    {
+                        float deckHeightY = hit.point.y;
+                        float heightDiff = deckHeightY - transform.position.y;
+
+                        // Smoothly hug the deck mesh surface height when standing on board
+                        if (Mathf.Abs(heightDiff) <= 0.6f)
+                        {
+                            _verticalVel = heightDiff / Time.deltaTime;
+                        }
+                        break;
+                    }
                 }
             }
+
+            _cc.Move((move + Vector3.up * _verticalVel) * Time.deltaTime + platformDisplacement);
 
             // Face the direction of travel.
             if (move.sqrMagnitude > 0.001f)
@@ -144,6 +189,7 @@ namespace LittleTrawling.Entities
         /// </summary>
         public void SnapTo(Transform anchor)
         {
+            Debug.Log($"[PlayerController] SnapTo called! Anchor Pos={anchor.position}, Anchor Rot={anchor.eulerAngles}");
             _cc.enabled = false;
             transform.SetPositionAndRotation(anchor.position, anchor.rotation);
             _cc.enabled = true;

@@ -45,13 +45,13 @@ namespace LittleTrawling.Environment
 
         private void InitialSpawn()
         {
-            Debug.Log($"[FishSpawner] InitialSpawn starting... Target maxSchools={maxSchools}, spawnRadius={spawnRadius}m");
+            // Debug.Log($"[FishSpawner] InitialSpawn starting... Target maxSchools={maxSchools}, spawnRadius={spawnRadius}m");
             int spawnedCount = 0;
             for (int i = 0; i < maxSchools; i++)
             {
                 if (TrySpawnSchool()) spawnedCount++;
             }
-            Debug.Log($"[FishSpawner] InitialSpawn complete! Successfully spawned {spawnedCount}/{maxSchools} fish schools.");
+            // Debug.Log($"[FishSpawner] InitialSpawn complete! Successfully spawned {spawnedCount}/{maxSchools} fish schools.");
         }
 
         private void Update()
@@ -87,11 +87,11 @@ namespace LittleTrawling.Environment
                 schoolObj.transform.position = candidatePos;
                 var school = schoolObj.AddComponent<FishSchool>();
                 _activeSchools.Add(school);
-                Debug.Log($"[FishSpawner] Successfully spawned school #{_activeSchools.Count} at {candidatePos}");
+                // Debug.Log($"[FishSpawner] Successfully spawned school #{_activeSchools.Count} at {candidatePos}");
                 return true;
             }
 
-            Debug.LogWarning($"[FishSpawner] Failed to find valid spawn location after 25 attempts! Active schools count: {_activeSchools.Count}");
+            // Debug.LogWarning($"[FishSpawner] Failed to find valid spawn location after 25 attempts! Active schools count: {_activeSchools.Count}");
             return false;
         }
 

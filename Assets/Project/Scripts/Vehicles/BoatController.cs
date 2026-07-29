@@ -18,12 +18,12 @@ namespace LittleTrawling.Vehicles
         [Header("Movement Alignment")]
         [Tooltip("Local axis indicating the forward facing direction of the boat model.")]
         [SerializeField] private Vector3 forwardAxis = Vector3.right;
-
         [Header("Docking")]
         [Tooltip("If true, automatically docks and snaps the boat to the berth on game start.")]
         [SerializeField] private bool autoDockOnStart = true;
         [Tooltip("Optional reference to the starting dock. If unassigned, automatically finds the nearest dock in the scene.")]
         [SerializeField] private Dock startingDock;
+
 
         [Header("Land Protection")]
         [Tooltip("Safety radius for checking land collision ahead.")]
@@ -94,9 +94,15 @@ namespace LittleTrawling.Vehicles
             return false;
         }
 
+        private int _fixedUpdateCount;
+
         public void DockTo(Dock dock)
         {
-            if (dock == null) return;
+            if (dock == null)
+            {
+                Debug.LogWarning("[BoatController] DockTo called with null dock!");
+                return;
+            }
             IsDocked = true;
             _currentSpeed = 0f;
             _currentAngularVelocity = 0f;
@@ -115,6 +121,8 @@ namespace LittleTrawling.Vehicles
                 float pitch = OceanController.Instance != null ? OceanController.Instance.CurrentPitch : 0f;
                 Quaternion targetRot = Quaternion.Euler(pitch, _currentYaw, roll);
 
+                Debug.Log($"[BoatController] DockTo '{dock.name}'! Berth Name='{targetBerth.name}', Berth Pos={targetBerth.position}, Berth Rot={targetBerth.eulerAngles}, Berth Scale={targetBerth.lossyScale}, Configured forwardAxis={forwardAxis}");
+
                 transform.SetPositionAndRotation(targetPos, targetRot);
                 if (_rb != null)
                 {
@@ -122,11 +130,17 @@ namespace LittleTrawling.Vehicles
                     _rb.rotation = targetRot;
                 }
                 Physics.SyncTransforms();
+                Debug.Log($"[BoatController] DockTo Complete. Boat WorldPos={transform.position}, Rot={transform.eulerAngles}, RB Pos={(_rb != null ? _rb.position : Vector3.zero)}, IsDocked={IsDocked}");
+            }
+            else
+            {
+                Debug.LogError($"[BoatController] DockTo called but dock '{dock.name}' has null Berth!");
             }
         }
 
         public void Undock()
         {
+            Debug.Log("[BoatController] Undock called.");
             IsDocked = false;
         }
 
@@ -138,6 +152,7 @@ namespace LittleTrawling.Vehicles
             EnsureOceanController();
             float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
             _baseY = transform.position.y - oceanOffset;
+            Debug.Log($"[BoatController] Awake on '{name}'. Initial Pos={transform.position}, Yaw={_currentYaw}, _baseY={_baseY:F2}");
         }
 
         private void EnsureOceanController()
@@ -257,6 +272,12 @@ namespace LittleTrawling.Vehicles
             // Match ocean bobbing Y position
             float oceanOffset = OceanController.Instance != null ? OceanController.Instance.CurrentYOffset : 0f;
             nextPos.y = _baseY + oceanOffset;
+
+            _fixedUpdateCount++;
+            if (_fixedUpdateCount == 1)
+            {
+                Debug.Log($"[BoatController] First FixedUpdate post-dock: Pos={_rb.position}, Rot={_rb.rotation.eulerAngles}, IsDocked={IsDocked}");
+            }
 
             _rb.MovePosition(nextPos);
         }

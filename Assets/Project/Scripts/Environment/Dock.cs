@@ -23,6 +23,12 @@ namespace LittleTrawling.Environment
 
         public Transform Berth => berth != null ? berth : transform;
 
+        private void Start()
+        {
+            Transform b = Berth;
+            Debug.Log($"[Dock] '{name}' initialized. Dock WorldPos={transform.position}, Berth Name='{b.name}', Berth WorldPos={b.position}, Berth LocalPos={b.localPosition}, Berth Rot={b.eulerAngles}");
+        }
+
         public Collider Hitbox
         {
             get
