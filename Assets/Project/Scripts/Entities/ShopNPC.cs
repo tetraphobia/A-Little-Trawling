@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 using LittleTrawling.Core;
 using LittleTrawling.Interaction;
 using LittleTrawling.Systems;
+using LittleTrawling.UI;
 
 namespace LittleTrawling.Entities
 {
@@ -30,7 +32,7 @@ namespace LittleTrawling.Entities
 
         public string GetInteractionPrompt()
         {
-            return "Press <color=#EE5D5D><b>[E]</b></color> to talk to Shopkeeper";
+            return "<color=#EE5D5D><b>[E]</b></color> Talk to Shopkeeper";
         }
 
         public void Interact()
@@ -38,19 +40,68 @@ namespace LittleTrawling.Entities
             var gm = GameManager.Instance;
             if (gm == null || !gm.IsState(GameState.Walking)) return;
 
+            string[] introLine = new string[] { "Ahoy, fisherbird! Welcome to my dockside shop." };
+
             if (DialogueManager.Instance != null)
             {
-                DialogueManager.Instance.ShowDialogue("Shopkeeper", greetingLines, () =>
+                DialogueManager.Instance.ShowDialogue("Shopkeeper", introLine, () =>
+                {
+                    PresentShopkeeperChoices();
+                });
+            }
+            else
+            {
+                PresentShopkeeperChoices();
+            }
+        }
+
+        private void PresentShopkeeperChoices()
+        {
+            if (DialogueChoiceUI.Instance == null)
+            {
+                if (GameManager.Instance != null) GameManager.Instance.SetState(GameState.Shopping);
+                return;
+            }
+
+            var choices = new List<DialogueChoice>
+            {
+                new DialogueChoice("What have you got?", () =>
                 {
                     if (GameManager.Instance != null)
                     {
                         GameManager.Instance.SetState(GameState.Shopping);
                     }
-                });
-            }
-            else
+                }),
+                new DialogueChoice("Why am I here?", () =>
+                {
+                    PlayTutorialDialogue();
+                })
+            };
+
+            DialogueChoiceUI.Instance.ShowChoices(choices);
+        }
+
+        private void PlayTutorialDialogue()
+        {
+            string[] tutorialLines = new string[]
             {
-                gm.SetState(GameState.Shopping);
+                "Why, you're here to fish of course! I've got twelve ducklings at home that are counting on me.",
+                "Hold the <color=#EE5D5D><b>[F]</b></color> key near the water to charge and aim your cast. The longer you hold, the farther it goes.",
+                "Wait until you see the bobber bob quickly, then press <color=#EE5D5D><b>[F]</b></color> again to reel in your catch!",
+                "Use the boat to navigate around the waters, some species of fish can only be caught in the deeper parts of the lake.",
+                "The price of a fish varies depending on its rarity and size. Larger, rarer fish are worth more.",
+                "Press <color=#EE5D5D><b>[I]</b></color> to see what fish you've caught so far, and what price I'll pay for them!"
+            };
+
+            if (DialogueManager.Instance != null)
+            {
+                DialogueManager.Instance.ShowDialogue("Shopkeeper", tutorialLines, () =>
+                {
+                    if (GameManager.Instance != null)
+                    {
+                        GameManager.Instance.SetState(GameState.Walking);
+                    }
+                });
             }
         }
 

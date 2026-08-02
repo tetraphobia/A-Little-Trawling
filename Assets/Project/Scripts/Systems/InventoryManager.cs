@@ -60,7 +60,22 @@ namespace LittleTrawling.Systems
 
             if (species != null)
             {
+                bool isFirstTime = !_discoveredFishNames.Contains(species.displayName);
                 _discoveredFishNames.Add(species.displayName);
+
+                if (isFirstTime && DialogueManager.Instance != null)
+                {
+                    string nameText = species.displayName;
+                    string descText = !string.IsNullOrEmpty(species.description)
+                        ? species.description
+                        : "A fine new addition to your fish inventory!";
+
+                    DialogueManager.Instance.ShowDialogue("First Catch!", new string[]
+                    {
+                        $"Caught a <b>{nameText}</b>!",
+                        descText
+                    });
+                }
             }
         }
 

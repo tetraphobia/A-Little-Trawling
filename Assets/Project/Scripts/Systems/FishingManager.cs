@@ -546,6 +546,7 @@ namespace LittleTrawling.Systems
         {
             var trout = ScriptableObject.CreateInstance<Fish>();
             trout.displayName = "Rainbow Trout";
+            trout.tier = FishTier.Tier0;
             trout.minSize = 0.3f;
             trout.maxSize = 0.7f;
             trout.minWeight = 0.5f;
@@ -554,6 +555,7 @@ namespace LittleTrawling.Systems
 
             var salmon = ScriptableObject.CreateInstance<Fish>();
             salmon.displayName = "Atlantic Salmon";
+            salmon.tier = FishTier.Tier1;
             salmon.minSize = 0.5f;
             salmon.maxSize = 1.1f;
             salmon.minWeight = 2.0f;
@@ -562,15 +564,26 @@ namespace LittleTrawling.Systems
 
             var bass = ScriptableObject.CreateInstance<Fish>();
             bass.displayName = "Largemouth Bass";
+            bass.tier = FishTier.Tier2;
             bass.minSize = 0.25f;
             bass.maxSize = 0.6f;
             bass.minWeight = 0.4f;
             bass.maxWeight = 2.0f;
             bass.baseValue = 15;
 
+            var tuna = ScriptableObject.CreateInstance<Fish>();
+            tuna.displayName = "Bluefin Tuna";
+            tuna.tier = FishTier.Tier3;
+            tuna.minSize = 0.8f;
+            tuna.maxSize = 1.8f;
+            tuna.minWeight = 5.0f;
+            tuna.maxWeight = 15.0f;
+            tuna.baseValue = 80;
+
             fishPool.Add(trout);
             fishPool.Add(salmon);
             fishPool.Add(bass);
+            fishPool.Add(tuna);
         }
 
         private void ExecuteMinigameSuccess()
@@ -584,7 +597,7 @@ namespace LittleTrawling.Systems
                 AudioSource.PlayClipAtPoint(fishCaughtSuccessSound, bobberPos, 1.0f);
             }
 
-            Fish species = SelectWeightedFishByRodTier();
+            Fish species = SelectWeightedFishByRodTier(bobberPos);
             float size = species.RollSize();
             float weight = species.RollWeight();
             float sizeCm = size * 100f;
@@ -594,7 +607,46 @@ namespace LittleTrawling.Systems
             StartCoroutine(AnimateFishCatchArc(species, bobberPos, sizeCm, weight, goldEarned));
         }
 
-        private Fish SelectWeightedFishByRodTier()
+        public float GetWaterDepthAt(Vector3 pos)
+        {
+            float waterY = OceanController.Instance != null ? OceanController.Instance.CurrentWaterHeight : 0f;
+            Vector3 rayOrigin = new Vector3(pos.x, waterY + 50f, pos.z);
+            RaycastHit[] hits = Physics.RaycastAll(rayOrigin, Vector3.down, 150f);
+
+            float lowestHitY = waterY;
+            bool hitSeabed = false;
+
+            foreach (var hit in hits)
+            {
+                if (hit.collider == null || hit.collider.isTrigger) continue;
+                if (hit.collider.CompareTag("Player")) continue;
+                if (hit.collider.name.ToLower().Contains("ocean") || hit.collider.name.ToLower().Contains("water")) continue;
+
+                if (hit.point.y < lowestHitY)
+                {
+                    lowestHitY = hit.point.y;
+                    hitSeabed = true;
+                }
+            }
+
+            if (!hitSeabed)
+            {
+                float distFromCenter = Vector3.Distance(new Vector3(pos.x, 0, pos.z), Vector3.zero);
+                return Mathf.Clamp(distFromCenter * 0.25f, 1f, 25f);
+            }
+
+            return Mathf.Max(0f, waterY - lowestHitY);
+        }
+
+        private static int GetMaxTierForDepth(float depth)
+        {
+            if (depth < 3.0f) return 0;
+            if (depth < 7.0f) return 1;
+            if (depth < 12.0f) return 2;
+            return 3;
+        }
+
+        private Fish SelectWeightedFishByRodTier(Vector3 castPos)
         {
             if (fishPool == null || fishPool.Count == 0)
             {
@@ -603,47 +655,53 @@ namespace LittleTrawling.Systems
 
             var player = PlayerController.Instance;
             Rod rod = player != null ? player.Rod : null;
-            int rodTier = (int)(rod != null ? rod.tier : RodTier.Beginner);
+            int rodTier = Mathf.Clamp((int)(rod != null ? rod.tier : RodTier.Tier0), 0, 3);
 
-            List<Fish> eligible = new List<Fish>();
-            foreach (var f in fishPool)
+            float depth = GetWaterDepthAt(castPos);
+            int depthMaxTier = GetMaxTierForDepth(depth);
+            int effectiveMaxTier = Mathf.Min(rodTier, depthMaxTier);
+
+            float[] probs = GetFishTierProbabilities(effectiveMaxTier);
+
+            float roll = Random.value;
+            float cumulative = 0f;
+            int targetTier = 0;
+
+            for (int t = 0; t <= effectiveMaxTier; t++)
             {
-                if (f != null && f.minRodTier <= rodTier)
+                cumulative += probs[t];
+                if (roll <= cumulative)
                 {
-                    eligible.Add(f);
+                    targetTier = t;
+                    break;
                 }
             }
 
+            List<Fish> eligible = fishPool.FindAll(f => f != null && (int)f.tier == targetTier);
+
+            if (eligible.Count == 0)
+            {
+                eligible = fishPool.FindAll(f => f != null && (int)f.tier <= effectiveMaxTier);
+            }
             if (eligible.Count == 0)
             {
                 eligible.AddRange(fishPool);
             }
 
-            List<float> weights = new List<float>();
-            float totalWeight = 0f;
+            int randomIndex = Random.Range(0, eligible.Count);
+            return eligible[randomIndex];
+        }
 
-            foreach (var f in eligible)
+        private static float[] GetFishTierProbabilities(int rodTier)
+        {
+            return rodTier switch
             {
-                int rarityVal = (int)f.rarity;
-                int fishTier = f.minRodTier;
-
-                float w = 1.0f + (rodTier * (fishTier * 3.0f + rarityVal * 2.5f + 1.5f));
-                weights.Add(w);
-                totalWeight += w;
-            }
-
-            float roll = Random.Range(0f, totalWeight);
-            float cumulative = 0f;
-            for (int i = 0; i < eligible.Count; i++)
-            {
-                cumulative += weights[i];
-                if (roll <= cumulative)
-                {
-                    return eligible[i];
-                }
-            }
-
-            return eligible[eligible.Count - 1];
+                0 => new float[] { 0.70f, 0.20f, 0.09f, 0.01f },
+                1 => new float[] { 0.35f, 0.45f, 0.15f, 0.05f },
+                2 => new float[] { 0.15f, 0.35f, 0.38f, 0.12f },
+                3 => new float[] { 0.05f, 0.20f, 0.50f, 0.25f },
+                _ => new float[] { 0.70f, 0.20f, 0.09f, 0.01f }
+            };
         }
 
         private System.Collections.IEnumerator AnimateFishCatchArc(Fish species, Vector3 startPos, float sizeCm, float weight, int goldEarned)

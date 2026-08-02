@@ -135,8 +135,8 @@ namespace LittleTrawling.UI
             sepRt.anchorMin = new Vector2(0, 1);
             sepRt.anchorMax = new Vector2(1, 1);
             sepRt.pivot = new Vector2(0.5f, 1);
-            sepRt.sizeDelta = new Vector2(0, 2);
-            sepRt.anchoredPosition = new Vector2(0, -54f);
+            sepRt.sizeDelta = new Vector2(0, 3f);
+            sepRt.anchoredPosition = new Vector2(0, -66f);
             sepRt.offsetMin = new Vector2(UITheme.Padding, sepRt.offsetMin.y);
             sepRt.offsetMax = new Vector2(-UITheme.Padding, sepRt.offsetMax.y);
 
@@ -145,33 +145,18 @@ namespace LittleTrawling.UI
             scrollRt.anchorMin = Vector2.zero;
             scrollRt.anchorMax = Vector2.one;
             scrollRt.offsetMin = new Vector2(UITheme.Padding, UITheme.Padding);
-            scrollRt.offsetMax = new Vector2(-UITheme.Padding, -62f);
+            scrollRt.offsetMax = new Vector2(-UITheme.Padding, -78f);
             _contentContainer = content;
 
             _emptyState = new GameObject("EmptyState");
             _emptyState.transform.SetParent(panelBg.transform, false);
             RectTransform emptyRt = _emptyState.AddComponent<RectTransform>();
-            UITheme.CenterWithSize(emptyRt, 400f, 160f);
+            UITheme.CenterWithSize(emptyRt, 400f, 80f);
 
             TextMeshProUGUI emptyTitle = UITheme.CreateLabel("EmptyTitle", _emptyState.transform,
                 "Your inventory is empty!",
                 UITheme.TitleFontSize, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.Center);
-            RectTransform emptyTitleRt = emptyTitle.rectTransform;
-            emptyTitleRt.anchorMin = new Vector2(0, 0.5f);
-            emptyTitleRt.anchorMax = new Vector2(1, 1);
-            emptyTitleRt.offsetMin = Vector2.zero;
-            emptyTitleRt.offsetMax = Vector2.zero;
-
-            TextMeshProUGUI emptySub = UITheme.CreateLabel("EmptySub", _emptyState.transform,
-                "Hold and release <color=#EE5D5D><b>[F]</b></color> near ocean water to catch fish.",
-                UITheme.SmallFontSize, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.Center);
-            emptySub.textWrappingMode = TextWrappingModes.Normal;
-            emptySub.richText = true;
-            RectTransform emptySubRt = emptySub.rectTransform;
-            emptySubRt.anchorMin = new Vector2(0, 0);
-            emptySubRt.anchorMax = new Vector2(1, 0.5f);
-            emptySubRt.offsetMin = Vector2.zero;
-            emptySubRt.offsetMax = Vector2.zero;
+            UITheme.StretchFill(emptyTitle.rectTransform);
 
             _emptyState.SetActive(false);
             _modalRoot.SetActive(false);
@@ -214,12 +199,19 @@ namespace LittleTrawling.UI
                 UITheme.CardSprite, UITheme.AccentSkyBlue);
             RectTransform cardBorderRt = cardBorder.rectTransform;
             LayoutElement le = cardBorder.gameObject.AddComponent<LayoutElement>();
-            le.preferredHeight = UITheme.CardHeight;
+            le.preferredHeight = 152f;
             le.flexibleWidth = 1f;
 
             Image cardBg = UITheme.CreatePanel("CardBg", cardBorder.transform,
                 UITheme.CardSprite, UITheme.CardWhite);
             UITheme.StretchFill(cardBg.rectTransform, 2f, 2f, 2f, 2f);
+
+            Sprite fishSprite = item.species != null ? item.species.sprite : null;
+            float frameWidth = 105f;
+            float aspect = (fishSprite != null && fishSprite.rect.width > 0)
+                ? (fishSprite.rect.height / fishSprite.rect.width)
+                : 0.55f;
+            float frameHeight = Mathf.Clamp(frameWidth * aspect, 40f, 115f);
 
             Image spriteFrame = UITheme.CreatePanel("SpriteFrame", cardBg.transform,
                 UITheme.CardSprite, UITheme.BackgroundMint);
@@ -227,10 +219,9 @@ namespace LittleTrawling.UI
             spriteFrameRt.anchorMin = new Vector2(0, 0.5f);
             spriteFrameRt.anchorMax = new Vector2(0, 0.5f);
             spriteFrameRt.pivot = new Vector2(0, 0.5f);
-            spriteFrameRt.sizeDelta = new Vector2(110f, 110f);
+            spriteFrameRt.sizeDelta = new Vector2(frameWidth, frameHeight);
             spriteFrameRt.anchoredPosition = new Vector2(12f, 0);
 
-            Sprite fishSprite = item.species != null ? item.species.sprite : null;
             if (fishSprite != null && fishSprite.texture != null)
             {
                 Image fishImg = UITheme.CreatePanel("FishSprite", spriteFrame.transform, fishSprite, Color.white);
@@ -245,8 +236,8 @@ namespace LittleTrawling.UI
                 UITheme.StretchFill(noSprite.rectTransform);
             }
 
-            float textLeft = 136f;
-            float textWidth = -260f;
+            float textLeft = 132f;
+            float textWidth = -150f;
 
             string fishName = item.species != null ? item.species.displayName : "Unknown Fish";
             FishRarity rarity = item.species != null ? item.species.rarity : FishRarity.Common;
@@ -258,7 +249,7 @@ namespace LittleTrawling.UI
                 20f, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
             nameLabel.richText = true;
             RectTransform nameLabelRt = nameLabel.rectTransform;
-            nameLabelRt.anchorMin = new Vector2(0, 0.7f);
+            nameLabelRt.anchorMin = new Vector2(0, 0.72f);
             nameLabelRt.anchorMax = new Vector2(1, 1f);
             nameLabelRt.offsetMin = new Vector2(textLeft, 0);
             nameLabelRt.offsetMax = new Vector2(textWidth, -6f);
@@ -266,25 +257,25 @@ namespace LittleTrawling.UI
             string desc = item.species != null ? item.species.description : "No description available.";
             TextMeshProUGUI descLabel = UITheme.CreateLabel("DescLabel", cardBg.transform,
                 $"<i>\"{desc}\"</i>",
-                UITheme.SmallFontSize, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+                UITheme.SmallFontSize - 1f, UITheme.TextMuted, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
             descLabel.richText = true;
             descLabel.textWrappingMode = TextWrappingModes.Normal;
-            descLabel.overflowMode = TextOverflowModes.Ellipsis;
+            descLabel.overflowMode = TextOverflowModes.Overflow;
             RectTransform descLabelRt = descLabel.rectTransform;
-            descLabelRt.anchorMin = new Vector2(0, 0.35f);
-            descLabelRt.anchorMax = new Vector2(1, 0.7f);
+            descLabelRt.anchorMin = new Vector2(0, 0.25f);
+            descLabelRt.anchorMax = new Vector2(1, 0.72f);
             descLabelRt.offsetMin = new Vector2(textLeft, 0);
             descLabelRt.offsetMax = new Vector2(textWidth, 0);
 
             TextMeshProUGUI statsLabel = UITheme.CreateLabel("StatsLabel", cardBg.transform,
                 $"Size: <b>{item.sizeCm:F1} cm</b>  |  Weight: <b>{item.weightKg:F2} kg</b>",
-                UITheme.SmallFontSize, UITheme.AccentSkyBlue, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+                UITheme.SmallFontSize, UITheme.AccentSkyBlue, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
             statsLabel.richText = true;
             Color statsColor = new Color32(70, 150, 200, 255);
             statsLabel.color = statsColor;
             RectTransform statsLabelRt = statsLabel.rectTransform;
             statsLabelRt.anchorMin = new Vector2(0, 0f);
-            statsLabelRt.anchorMax = new Vector2(1, 0.35f);
+            statsLabelRt.anchorMax = new Vector2(1, 0.25f);
             statsLabelRt.offsetMin = new Vector2(textLeft, 6f);
             statsLabelRt.offsetMax = new Vector2(textWidth, 0);
 

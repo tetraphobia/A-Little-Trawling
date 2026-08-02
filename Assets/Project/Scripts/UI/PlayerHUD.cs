@@ -144,7 +144,7 @@ namespace LittleTrawling.UI
 
         private void OnStateChanged(GameState state)
         {
-            bool visible = (state == GameState.Walking || state == GameState.Fishing);
+            bool visible = (state == GameState.Walking || state == GameState.Fishing || state == GameState.Piloting || state == GameState.Shopping);
             if (_hudRoot != null) _hudRoot.SetActive(visible);
         }
 

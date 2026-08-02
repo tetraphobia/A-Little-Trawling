@@ -6,7 +6,7 @@ namespace LittleTrawling.Interaction
     public interface IInteractable
     {
         /// <summary>
-        /// Prompt text to display on UI when player is near (e.g. "Press [E] to enter boat").
+        /// Prompt text to display on UI when player is near (e.g. "[E] Enter boat").
         /// </summary>
         string GetInteractionPrompt();
 

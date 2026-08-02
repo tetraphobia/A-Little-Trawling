@@ -263,7 +263,7 @@ namespace LittleTrawling.UI
 
         /// <summary>Creates a TextMeshProUGUI label.</summary>
         public static TextMeshProUGUI CreateLabel(string name, Transform parent, string text,
-            float fontSize, Color color, FontStyles fontStyle = FontStyles.Normal,
+            float fontSize, Color color, FontStyles fontStyle = FontStyles.Bold,
             TextAlignmentOptions alignment = TextAlignmentOptions.MidlineLeft)
         {
             RectTransform rt = CreateRect(name, parent);

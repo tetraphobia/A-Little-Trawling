@@ -10,17 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e75debfd6026fa64db9f8ea1db4ccdc9, type: 3}
-  m_Name: Perch
+  m_Name: Halibut
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Data.Fish
-  displayName: Perch
-  description: The most common form of fish 'round these parts. Best known for their
-    tenacious drive to avoid being eaten.
+  displayName: Halibut
+  description: A colossal flatfish from deep oceanic trenches. Takes real effort to haul aboard!
   sprite: {fileID: 21300000, guid: c6719350a960e4a49985efcaf2d7efc8, type: 3}
   catchSound: {fileID: 8300000, guid: 18daf0139f3cb194eb393f2c434f1a13, type: 3}
-  rarity: 0
-  minSize: 0.2
-  maxSize: 0.6
-  minWeight: 0.12
-  maxWeight: 3.2
-  baseValue: 10
-  tier: 0
+  rarity: 1
+  tier: 2
+  minSize: 0.7
+  maxSize: 1.8
+  minWeight: 8.0
+  maxWeight: 35.0
+  baseValue: 110

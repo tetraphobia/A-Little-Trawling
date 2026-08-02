@@ -4,25 +4,20 @@ namespace LittleTrawling.Data
 {
     public enum RodTier
     {
-        Beginner,
-        Enthusiast,
-        Professional
+        Tier0,
+        Tier1,
+        Tier2,
+        Tier3
     }
 
     /// <summary>
-    /// Editable definition of a catchable fish species.
+    /// Editable definition of a fishing rod.
     /// </summary>
     [CreateAssetMenu(fileName = "Rod", menuName = "Fishing/Rod")]
-    public class Rod: ScriptableObject
+    public class Rod : ScriptableObject
     {
-        [Header("Name")]
         public string displayName = "New Rod";
-
-        [Header("Cost")]
         public int cost = 1000;
-
-        [Header("Tier")]
-        [Tooltip("Determines which tier of fish this rod can catch.")]
-        public RodTier tier = RodTier.Beginner;
+        public RodTier tier = RodTier.Tier0;
     }
 }

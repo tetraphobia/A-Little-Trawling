@@ -141,9 +141,22 @@ namespace LittleTrawling.Systems
         {
             float delay = 1.0f / Mathf.Max(1f, charsPerSec);
             int length = fullLine.Length;
+            int i = 0;
 
-            for (int i = 1; i <= length; i++)
+            while (i < length)
             {
+                if (fullLine[i] == '<')
+                {
+                    int closeIndex = fullLine.IndexOf('>', i);
+                    if (closeIndex != -1)
+                    {
+                        i = closeIndex + 1;
+                        _displayedText = fullLine.Substring(0, i);
+                        continue;
+                    }
+                }
+
+                i++;
                 _displayedText = fullLine.Substring(0, i);
                 PlayCharacterBlip(fullLine[i - 1]);
                 yield return new WaitForSeconds(delay);

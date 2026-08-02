@@ -76,6 +76,7 @@ namespace LittleTrawling.Vehicles
 
         public Dock CurrentDockZone { get; set; }
         public bool IsDocked { get; private set; }
+        public bool IsPlayerPiloting => _piloting;
 
         private void Awake()
         {

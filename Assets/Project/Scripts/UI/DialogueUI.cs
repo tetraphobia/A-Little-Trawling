@@ -88,7 +88,7 @@ namespace LittleTrawling.UI
             bodyRt.offsetMin = new Vector2(28f, 16f);
             bodyRt.offsetMax = new Vector2(-28f, -16f);
 
-            _promptText = UITheme.CreateLabel("PromptText", card.transform, "▼ Press [E]",
+            _promptText = UITheme.CreateLabel("PromptText", card.transform, "▼ <color=#EE5D5D>[E]</color> Continue",
                 UITheme.SmallFontSize, UITheme.TextPastelRed, FontStyles.Bold, TextAlignmentOptions.BottomRight);
             RectTransform promptRt = _promptText.rectTransform;
             promptRt.anchorMin = new Vector2(1, 0);
