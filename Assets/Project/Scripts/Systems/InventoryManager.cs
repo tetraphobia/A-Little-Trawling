@@ -60,12 +60,7 @@ namespace LittleTrawling.Systems
 
             if (species != null)
             {
-                bool isNewDiscovery = _discoveredFishNames.Add(species.displayName);
-                if (isNewDiscovery && DialogueManager.Instance != null)
-                {
-                    string dialogueText = $"You caught a {species.displayName}! {species.description}";
-                    DialogueManager.Instance.ShowDialogue("Notice", new string[] { dialogueText }, null, new Color(0.2f, 0.85f, 0.4f));
-                }
+                _discoveredFishNames.Add(species.displayName);
             }
         }
 

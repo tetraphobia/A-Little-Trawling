@@ -1,12 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using LittleTrawling.Core;
+using LittleTrawling.UI;
 
 namespace LittleTrawling.Interaction
 {
     /// <summary>
     /// Central manager for interaction prompts and execution.
-    /// Tracks active interactables in range, listens to input, and renders UI prompts.
+    /// Tracks active interactables in range, listens to input, and renders uGUI prompts in AC:NH style.
     /// </summary>
     public class InteractionSystem : MonoBehaviour
     {
@@ -14,8 +17,9 @@ namespace LittleTrawling.Interaction
 
         private readonly List<IInteractable> _activeInteractables = new List<IInteractable>();
 
-        private static GUIStyle _boxStyle;
-        private static GUIStyle _labelStyle;
+        private Canvas _canvas;
+        private GameObject _promptRoot;
+        private TextMeshProUGUI _promptLabel;
 
         public IInteractable CurrentInteractable => _activeInteractables.Count > 0 ? _activeInteractables[^1] : null;
 
@@ -27,6 +31,8 @@ namespace LittleTrawling.Interaction
                 return;
             }
             Instance = this;
+
+            BuildUI();
         }
 
         private void Start()
@@ -43,7 +49,33 @@ namespace LittleTrawling.Interaction
             {
                 InputReader.Instance.InteractPressed -= OnInteractPressed;
             }
+            if (_canvas != null) Destroy(_canvas.gameObject);
             if (Instance == this) Instance = null;
+        }
+
+        private void BuildUI()
+        {
+            _canvas = UITheme.CreateScreenCanvas("InteractionSystem_Canvas", 35);
+            _canvas.transform.SetParent(transform, false);
+
+            // Border (gold)
+            Image border = UITheme.CreatePanel("PromptBorder", _canvas.transform,
+                UITheme.BadgeSprite, UITheme.Gold);
+            UITheme.AnchorBottomCenter(border.rectTransform, 520f, 64f, 120f);
+            _promptRoot = border.gameObject;
+
+            // Background pill (warm white)
+            Image bg = UITheme.CreatePanel("PromptBg", border.transform,
+                UITheme.BadgeSprite, UITheme.CardWhite);
+            UITheme.StretchFill(bg.rectTransform, 3f, 3f, 3f, 3f);
+
+            // Label
+            _promptLabel = UITheme.CreateLabel("PromptLabel", bg.transform, "",
+                UITheme.TitleFontSize, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.Center);
+            _promptLabel.richText = true;
+            UITheme.StretchFill(_promptLabel.rectTransform, 16f, 16f, 0f, 0f);
+
+            _promptRoot.SetActive(false);
         }
 
         public void RegisterInteractable(IInteractable interactable)
@@ -74,72 +106,31 @@ namespace LittleTrawling.Interaction
             }
         }
 
-        private static Texture2D _bgTexture;
-        private static Texture2D _borderTexture;
-        private static GUIStyle _textStyle;
-
-        private void OnGUI()
+        private void Update()
         {
             var target = CurrentInteractable;
-            if (target == null) return;
-
             var gm = GameManager.Instance;
-            if (gm != null && !gm.IsState(GameState.Walking)) return;
+            bool isWalkingOrPiloting = gm == null || gm.IsState(GameState.Walking) || gm.IsState(GameState.Piloting);
+
+            if (target == null || !isWalkingOrPiloting)
+            {
+                if (_promptRoot != null && _promptRoot.activeSelf)
+                    _promptRoot.SetActive(false);
+                return;
+            }
 
             string prompt = target.GetInteractionPrompt();
-            if (string.IsNullOrEmpty(prompt)) return;
-
-            InitPromptResources();
-            GUI.depth = -9999;
-
-            int width = 460;
-            int height = 54;
-            int x = (Screen.width - width) / 2;
-            int y = (int)(Screen.height * 0.70f);
-
-            Rect outerRect = new Rect(x - 3, y - 3, width + 6, height + 6);
-            Rect innerRect = new Rect(x, y, width, height);
-
-            // Draw crisp gold border outline
-            GUI.DrawTexture(outerRect, _borderTexture);
-
-            // Draw solid dark background card
-            GUI.DrawTexture(innerRect, _bgTexture);
-
-            // Draw bright yellow prompt text
-            string formattedPrompt = $"<size=18><b>{prompt}</b></size>";
-            GUI.Label(innerRect, formattedPrompt, _textStyle);
-        }
-
-        private static Texture2D MakeSolidTex(int w, int h, Color col)
-        {
-            Color[] pix = new Color[w * h];
-            for (int i = 0; i < pix.Length; i++) pix[i] = col;
-            Texture2D result = new Texture2D(w, h);
-            result.SetPixels(pix);
-            result.Apply();
-            return result;
-        }
-
-        private static void InitPromptResources()
-        {
-            if (_bgTexture == null)
+            if (string.IsNullOrEmpty(prompt))
             {
-                _bgTexture = MakeSolidTex(1, 1, new Color(0.06f, 0.08f, 0.12f, 0.95f));
+                if (_promptRoot != null && _promptRoot.activeSelf)
+                    _promptRoot.SetActive(false);
+                return;
             }
-            if (_borderTexture == null)
+
+            if (_promptRoot != null)
             {
-                _borderTexture = MakeSolidTex(1, 1, new Color(0.95f, 0.75f, 0.20f, 1.0f));
-            }
-            if (_textStyle == null)
-            {
-                _textStyle = new GUIStyle(GUI.skin.label)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontStyle = FontStyle.Bold,
-                    richText = true
-                };
-                _textStyle.normal.textColor = Color.yellow;
+                if (!_promptRoot.activeSelf) _promptRoot.SetActive(true);
+                if (_promptLabel != null) _promptLabel.text = prompt;
             }
         }
 

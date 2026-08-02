@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Entities;
@@ -9,7 +11,8 @@ using LittleTrawling.Vehicles;
 namespace LittleTrawling.UI
 {
     /// <summary>
-    /// Manages the Upgrade Shop UI overlay and equipment purchases.
+    /// Manages the Upgrade Shop UI overlay and equipment purchases using uGUI.
+    /// Styled with Animal Crossing warm pastel theme.
     /// </summary>
     public class ShopUI : MonoBehaviour
     {
@@ -42,7 +45,11 @@ namespace LittleTrawling.UI
 
         private bool _isOpen;
         private bool _openedThisFrame;
-        private Vector2 _scrollPos;
+
+        private Canvas _canvas;
+        private GameObject _modalRoot;
+        private RectTransform _contentContainer;
+        private TextMeshProUGUI _goldLabel;
 
         private void Awake()
         {
@@ -54,6 +61,7 @@ namespace LittleTrawling.UI
             Instance = this;
 
             LoadDefaultCatalog();
+            BuildUI();
         }
 
         private void LoadDefaultCatalog()
@@ -128,6 +136,7 @@ namespace LittleTrawling.UI
                 InputReader.Instance.ClosePressed -= OnClosePressed;
             }
 
+            if (_canvas != null) Destroy(_canvas.gameObject);
             if (Instance == this) Instance = null;
         }
 
@@ -140,6 +149,12 @@ namespace LittleTrawling.UI
                 _openedThisFrame = true;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
+                _modalRoot.SetActive(true);
+                RebuildShopContent();
+            }
+            else if (!_isOpen && wasOpen)
+            {
+                _modalRoot.SetActive(false);
             }
         }
 
@@ -172,52 +187,222 @@ namespace LittleTrawling.UI
             }
         }
 
-        private void OnGUI()
+        // ── UI Construction ────────────────────────────────────────────
+
+        private void BuildUI()
         {
-            if (!_isOpen) return;
+            _canvas = UITheme.CreateScreenCanvas("ShopUI_Canvas", 45);
+            _canvas.transform.SetParent(transform, false);
 
-            // Create a GUI Shop Window
-            int winWidth = Mathf.Min(650, Screen.width - 40);
-            int winHeight = Mathf.Min(500, Screen.height - 40);
-            Rect winRect = new Rect((Screen.width - winWidth) / 2f, (Screen.height - winHeight) / 2f, winWidth, winHeight);
+            // Modal root
+            _modalRoot = new GameObject("ShopModalRoot");
+            _modalRoot.transform.SetParent(_canvas.transform, false);
+            RectTransform modalRootRt = _modalRoot.AddComponent<RectTransform>();
+            UITheme.StretchFill(modalRootRt);
 
-            GUI.Box(winRect, "");
+            // Dim overlay
+            UITheme.CreateDimOverlay("DimOverlay", _modalRoot.transform);
 
-            GUILayout.BeginArea(new Rect(winRect.x + 15, winRect.y + 15, winRect.width - 30, winRect.height - 30));
+            // Gold border panel
+            Image panelBorder = UITheme.CreatePanel("PanelBorder", _modalRoot.transform,
+                UITheme.PanelSprite, UITheme.Gold);
+            UITheme.CenterWithSize(panelBorder.rectTransform, 800f, 640f);
 
-            // Header & Gold Balance
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("<size=22><b>Hey, fisherbird. Wanna buy something?</b></size>", GUILayout.Height(35));
-            GUILayout.FlexibleSpace();
+            // Warm white panel fill
+            Image panelBg = UITheme.CreatePanel("PanelBg", panelBorder.transform,
+                UITheme.PanelSprite, UITheme.CardWhite);
+            UITheme.StretchFill(panelBg.rectTransform, 4f, 4f, 4f, 4f);
+
+            // ── Header ──
+            RectTransform headerBar = UITheme.CreateRect("HeaderBar", panelBg.transform);
+            headerBar.anchorMin = new Vector2(0, 1);
+            headerBar.anchorMax = new Vector2(1, 1);
+            headerBar.pivot = new Vector2(0.5f, 1);
+            headerBar.sizeDelta = new Vector2(0, 60f);
+            headerBar.anchoredPosition = Vector2.zero;
+
+            TextMeshProUGUI headerLabel = UITheme.CreateLabel("HeaderLabel", headerBar,
+                "Hey, fisherbird. Wanna buy something?",
+                UITheme.TitleFontSize, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
+            RectTransform headerLabelRt = headerLabel.rectTransform;
+            headerLabelRt.anchorMin = Vector2.zero;
+            headerLabelRt.anchorMax = new Vector2(0.65f, 1);
+            headerLabelRt.offsetMin = new Vector2(UITheme.Padding, 0);
+            headerLabelRt.offsetMax = Vector2.zero;
+
+            // Gold balance label (right side of header)
+            _goldLabel = UITheme.CreateLabel("GoldBalance", headerBar,
+                "Gold: $0",
+                UITheme.BodyFontSize, UITheme.TextGold, FontStyles.Bold, TextAlignmentOptions.MidlineRight);
+            RectTransform goldRt = _goldLabel.rectTransform;
+            goldRt.anchorMin = new Vector2(0.65f, 0);
+            goldRt.anchorMax = Vector2.one;
+            goldRt.offsetMin = Vector2.zero;
+            goldRt.offsetMax = new Vector2(-UITheme.Padding, 0);
+
+            // Separator
+            Image sep = UITheme.CreatePanel("Separator", panelBg.transform, null, UITheme.AccentSkyBlue);
+            RectTransform sepRt = sep.rectTransform;
+            sepRt.anchorMin = new Vector2(0, 1);
+            sepRt.anchorMax = new Vector2(1, 1);
+            sepRt.pivot = new Vector2(0.5f, 1);
+            sepRt.sizeDelta = new Vector2(0, 2);
+            sepRt.anchoredPosition = new Vector2(0, -54f);
+            sepRt.offsetMin = new Vector2(UITheme.Padding, sepRt.offsetMin.y);
+            sepRt.offsetMax = new Vector2(-UITheme.Padding, sepRt.offsetMax.y);
+
+            // ── Scroll View ──
+            var (scrollRect, content) = UITheme.CreateScrollView("ShopScroll", panelBg.transform);
+            RectTransform scrollRt = scrollRect.GetComponent<RectTransform>();
+            scrollRt.anchorMin = Vector2.zero;
+            scrollRt.anchorMax = Vector2.one;
+            scrollRt.offsetMin = new Vector2(UITheme.Padding, 60f); // Room for close button
+            scrollRt.offsetMax = new Vector2(-UITheme.Padding, -62f);
+            _contentContainer = content;
+
+            // ── Close Shop Button ──
+            Button closeBtn = UITheme.CreateButton("CloseShopBtn", panelBg.transform, "Close Shop",
+                UITheme.Gold, UITheme.TextWhite, UITheme.BodyFontSize, 0f, UITheme.ButtonHeight);
+            RectTransform closeBtnRt = closeBtn.GetComponent<RectTransform>();
+            closeBtnRt.anchorMin = new Vector2(0, 0);
+            closeBtnRt.anchorMax = new Vector2(1, 0);
+            closeBtnRt.pivot = new Vector2(0.5f, 0);
+            closeBtnRt.sizeDelta = new Vector2(0, UITheme.ButtonHeight);
+            closeBtnRt.anchoredPosition = new Vector2(0, UITheme.Padding / 2f);
+            closeBtnRt.offsetMin = new Vector2(UITheme.Padding, closeBtnRt.offsetMin.y);
+            closeBtnRt.offsetMax = new Vector2(-UITheme.Padding, closeBtnRt.offsetMax.y);
+            closeBtn.onClick.AddListener(CloseShop);
+
+            _modalRoot.SetActive(false);
+        }
+
+        // ── Dynamic Content Rebuild ────────────────────────────────────
+
+        private void RebuildShopContent()
+        {
+            // Clear previous content
+            for (int i = _contentContainer.childCount - 1; i >= 0; i--)
+            {
+                Destroy(_contentContainer.GetChild(i).gameObject);
+            }
+
+            // Update gold label
             int currentGold = Wallet.Instance != null ? Wallet.Instance.CurrentGold : 0;
-            GUILayout.Label($"<size=18><b>Gold: ${currentGold}</b></size>", GUILayout.Height(35));
-            GUILayout.EndHorizontal();
+            _goldLabel.text = $"Gold: ${currentGold}";
 
-            GUILayout.Space(10);
+            // ── Sell Fish Section ──
+            BuildSectionHeader("Sell Caught Fish");
+            BuildSellFishCard();
 
-            _scrollPos = GUILayout.BeginScrollView(_scrollPos, GUILayout.Height(winHeight - 120));
+            // ── Spacer ──
+            BuildSpacer(10f);
 
-            // Sell Caught Fish
-            GUILayout.Label("<size=16><b>Sell Caught Fish</b></size>");
+            // ── Engines Section ──
+            BuildSectionHeader("Engines");
+            var boat = BoatController.Instance;
+            Engine currentEngine = boat != null ? boat.Engine : null;
+
+            foreach (var eng in availableEngines)
+            {
+                if (eng == null) continue;
+                BuildEngineCard(eng, currentEngine);
+            }
+
+            // ── Spacer ──
+            BuildSpacer(10f);
+
+            // ── Fishing Rods Section ──
+            BuildSectionHeader("Fishing Rods");
+            var player = PlayerController.Instance;
+            Rod currentRod = player != null ? player.Rod : null;
+
+            foreach (var rod in availableRods)
+            {
+                if (rod == null) continue;
+                BuildRodCard(rod, currentRod);
+            }
+        }
+
+        private void BuildSectionHeader(string title)
+        {
+            RectTransform header = UITheme.CreateRect("SectionHeader_" + title, _contentContainer);
+            LayoutElement le = header.gameObject.AddComponent<LayoutElement>();
+            le.preferredHeight = 34f;
+            le.flexibleWidth = 1f;
+
+            TextMeshProUGUI label = UITheme.CreateLabel("Label", header,
+                title, UITheme.BodyFontSize, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.BottomLeft);
+            UITheme.StretchFill(label.rectTransform);
+        }
+
+        private void BuildSpacer(float height)
+        {
+            RectTransform spacer = UITheme.CreateRect("Spacer", _contentContainer);
+            LayoutElement le = spacer.gameObject.AddComponent<LayoutElement>();
+            le.preferredHeight = height;
+            le.flexibleWidth = 1f;
+        }
+
+        private void BuildSellFishCard()
+        {
             var invMgr = InventoryManager.Instance;
-            var caughtItems = invMgr != null ? invMgr.Items : null;
-            int caughtCount = caughtItems != null ? caughtItems.Count : 0;
+            int caughtCount = invMgr != null ? invMgr.TotalCount : 0;
             int totalFishValue = invMgr != null ? invMgr.CalculateTotalValue() : 0;
 
-            GUILayout.BeginHorizontal("box");
+            // Card border
+            Image cardBorder = UITheme.CreatePanel("SellFishCard", _contentContainer,
+                UITheme.CardSprite, UITheme.AccentSkyBlue);
+            LayoutElement le = cardBorder.gameObject.AddComponent<LayoutElement>();
+            le.preferredHeight = 60f;
+            le.flexibleWidth = 1f;
+
+            // Card fill
+            Image cardBg = UITheme.CreatePanel("CardBg", cardBorder.transform,
+                UITheme.CardSprite, UITheme.CardWhite);
+            UITheme.StretchFill(cardBg.rectTransform, 2f, 2f, 2f, 2f);
+
             if (caughtCount == 0)
             {
-                GUILayout.Label("<color=#aaaaaa><i>No fish in inventory to sell. Go fishing with [F]!</i></color>");
-                GUILayout.FlexibleSpace();
-                GUI.enabled = false;
-                GUILayout.Button("Sell All Fish ($0)", GUILayout.Width(180), GUILayout.Height(35));
-                GUI.enabled = true;
+                // Empty state
+                TextMeshProUGUI emptyLabel = UITheme.CreateLabel("EmptyLabel", cardBg.transform,
+                    "No fish in inventory to sell. Go fishing with [F]!",
+                    UITheme.SmallFontSize, UITheme.TextMuted, FontStyles.Italic, TextAlignmentOptions.MidlineLeft);
+                RectTransform emptyLabelRt = emptyLabel.rectTransform;
+                emptyLabelRt.anchorMin = Vector2.zero;
+                emptyLabelRt.anchorMax = new Vector2(0.6f, 1);
+                emptyLabelRt.offsetMin = new Vector2(16f, 0);
+                emptyLabelRt.offsetMax = Vector2.zero;
+
+                Button sellBtn = UITheme.CreateButton("SellBtn", cardBg.transform, "Sell All Fish ($0)",
+                    UITheme.MutedButton, UITheme.TextWhite, UITheme.SmallFontSize, 190f, 38f);
+                sellBtn.interactable = false;
+                RectTransform sellBtnRt = sellBtn.GetComponent<RectTransform>();
+                sellBtnRt.anchorMin = new Vector2(1, 0.5f);
+                sellBtnRt.anchorMax = new Vector2(1, 0.5f);
+                sellBtnRt.pivot = new Vector2(1, 0.5f);
+                sellBtnRt.anchoredPosition = new Vector2(-12f, 0);
             }
             else
             {
-                GUILayout.Label($"<b>Inventory: {caughtCount} Fish</b> (Total Value: <color=yellow>${totalFishValue}</color>)");
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button($"Sell All Fish (${totalFishValue})", GUILayout.Width(180), GUILayout.Height(35)))
+                // Fish info
+                TextMeshProUGUI fishInfo = UITheme.CreateLabel("FishInfo", cardBg.transform,
+                    $"Inventory: <b>{caughtCount} Fish</b> (Total Value: <color=#{ColorUtility.ToHtmlStringRGB(UITheme.TextGold)}>${totalFishValue}</color>)",
+                    UITheme.SmallFontSize, UITheme.TextBrown, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+                fishInfo.richText = true;
+                RectTransform fishInfoRt = fishInfo.rectTransform;
+                fishInfoRt.anchorMin = Vector2.zero;
+                fishInfoRt.anchorMax = new Vector2(0.55f, 1);
+                fishInfoRt.offsetMin = new Vector2(16f, 0);
+                fishInfoRt.offsetMax = Vector2.zero;
+
+                Button sellBtn = UITheme.CreateButton("SellBtn", cardBg.transform, $"Sell All Fish (${totalFishValue})",
+                    UITheme.LeafGreen, UITheme.TextWhite, UITheme.SmallFontSize, 200f, 38f);
+                RectTransform sellBtnRt = sellBtn.GetComponent<RectTransform>();
+                sellBtnRt.anchorMin = new Vector2(1, 0.5f);
+                sellBtnRt.anchorMax = new Vector2(1, 0.5f);
+                sellBtnRt.pivot = new Vector2(1, 0.5f);
+                sellBtnRt.anchoredPosition = new Vector2(-12f, 0);
+                sellBtn.onClick.AddListener(() =>
                 {
                     if (Wallet.Instance != null)
                     {
@@ -225,105 +410,157 @@ namespace LittleTrawling.UI
                     }
                     if (invMgr != null) invMgr.ClearInventory();
                     PlaySFX(sellFishSound);
-                }
+                    RebuildShopContent();
+                });
             }
-            GUILayout.EndHorizontal();
+        }
 
-            GUILayout.Space(15);
+        private void BuildEngineCard(Engine eng, Engine currentEngine)
+        {
+            bool isEquipped = (currentEngine == eng);
 
-            // Engines
-            GUILayout.Label("<size=16><b>Engines</b></size>");
-            var boat = BoatController.Instance;
-            Engine currentEngine = boat != null ? boat.Engine : null;
+            Image cardBorder = UITheme.CreatePanel("EngineCard_" + eng.displayName, _contentContainer,
+                UITheme.CardSprite, UITheme.AccentSkyBlue);
+            LayoutElement le = cardBorder.gameObject.AddComponent<LayoutElement>();
+            le.preferredHeight = 70f;
+            le.flexibleWidth = 1f;
 
-            foreach (var eng in availableEngines)
+            Image cardBg = UITheme.CreatePanel("CardBg", cardBorder.transform,
+                UITheme.CardSprite, UITheme.CardWhite);
+            UITheme.StretchFill(cardBg.rectTransform, 2f, 2f, 2f, 2f);
+
+            // Title + stats
+            string title = $"<b>{eng.displayName}</b> ({eng.tier} Tier)";
+            string stats = $"Speed: {eng.maxSpeed:F1} m/s | Accel: {eng.acceleration:F1} m/s² | Decel: {eng.deceleration:F1} m/s² | Turn: {eng.turnSpeed:F0}°/s";
+
+            TextMeshProUGUI titleLabel = UITheme.CreateLabel("Title", cardBg.transform,
+                title, UITheme.SmallFontSize + 1f, UITheme.TextBrown, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            titleLabel.richText = true;
+            RectTransform titleRt = titleLabel.rectTransform;
+            titleRt.anchorMin = new Vector2(0, 0.5f);
+            titleRt.anchorMax = new Vector2(0.7f, 1);
+            titleRt.offsetMin = new Vector2(16f, 0);
+            titleRt.offsetMax = Vector2.zero;
+
+            TextMeshProUGUI statsLabel = UITheme.CreateLabel("Stats", cardBg.transform,
+                stats, UITheme.SmallFontSize - 2f, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            RectTransform statsRt = statsLabel.rectTransform;
+            statsRt.anchorMin = new Vector2(0, 0);
+            statsRt.anchorMax = new Vector2(0.7f, 0.5f);
+            statsRt.offsetMin = new Vector2(16f, 0);
+            statsRt.offsetMax = Vector2.zero;
+
+            // Buy / Equipped button
+            if (isEquipped)
             {
-                if (eng == null) continue;
+                Button btn = UITheme.CreateButton("EquippedBtn", cardBg.transform, "EQUIPPED",
+                    UITheme.BackgroundMint, UITheme.TextBrown, UITheme.SmallFontSize, 120f, 38f);
+                btn.interactable = false;
+                RectTransform btnRt = btn.GetComponent<RectTransform>();
+                btnRt.anchorMin = new Vector2(1, 0.5f);
+                btnRt.anchorMax = new Vector2(1, 0.5f);
+                btnRt.pivot = new Vector2(1, 0.5f);
+                btnRt.anchoredPosition = new Vector2(-12f, 0);
+            }
+            else
+            {
+                bool canAfford = Wallet.Instance != null && Wallet.Instance.CanAfford(eng.cost);
+                Button btn = UITheme.CreateButton("BuyBtn", cardBg.transform, $"Buy ${eng.cost}",
+                    canAfford ? UITheme.Gold : UITheme.MutedButton,
+                    UITheme.TextWhite, UITheme.SmallFontSize, 120f, 38f);
+                btn.interactable = canAfford;
+                RectTransform btnRt = btn.GetComponent<RectTransform>();
+                btnRt.anchorMin = new Vector2(1, 0.5f);
+                btnRt.anchorMax = new Vector2(1, 0.5f);
+                btnRt.pivot = new Vector2(1, 0.5f);
+                btnRt.anchoredPosition = new Vector2(-12f, 0);
 
-                GUILayout.BeginHorizontal("box");
-                bool isEquipped = (currentEngine == eng);
-                string title = $"<b>{eng.displayName}</b> ({eng.tier} Tier)";
-                string stats = $"Speed: {eng.maxSpeed:F1} m/s | Accel: {eng.acceleration:F1} m/s² | Decel: {eng.deceleration:F1} m/s² | Turn: {eng.turnSpeed:F0}°/s";
-                GUILayout.Label($"{title}\n<color=#aaaaaa>{stats}</color>");
-
-                GUILayout.FlexibleSpace();
-
-                if (isEquipped)
+                var capturedEng = eng;
+                btn.onClick.AddListener(() =>
                 {
-                    GUI.enabled = false;
-                    GUILayout.Button("EQUIPPED", GUILayout.Width(110), GUILayout.Height(35));
-                    GUI.enabled = true;
-                }
-                else
-                {
-                    bool canAfford = Wallet.Instance != null && Wallet.Instance.CanAfford(eng.cost);
-                    GUI.enabled = canAfford;
-                    if (GUILayout.Button($"Buy ${eng.cost}", GUILayout.Width(110), GUILayout.Height(35)))
+                    if (Wallet.Instance != null && Wallet.Instance.TrySpendGold(capturedEng.cost))
                     {
-                        if (Wallet.Instance != null && Wallet.Instance.TrySpendGold(eng.cost))
-                        {
-                            if (boat != null) boat.Engine = eng;
-                            PlaySFX(buyItemSound);
-                        }
+                        var boat = BoatController.Instance;
+                        if (boat != null) boat.Engine = capturedEng;
+                        PlaySFX(buyItemSound);
+                        RebuildShopContent();
                     }
-                    GUI.enabled = true;
-                }
-                GUILayout.EndHorizontal();
+                });
             }
+        }
 
-            GUILayout.Space(15);
+        private void BuildRodCard(Rod rod, Rod currentRod)
+        {
+            bool isEquipped = (currentRod == rod);
 
-            // Fishing rods
-            GUILayout.Label("<size=16><b>Fishing Rods</b></size>");
-            var player = PlayerController.Instance;
-            Rod currentRod = player != null ? player.Rod : null;
+            Image cardBorder = UITheme.CreatePanel("RodCard_" + rod.displayName, _contentContainer,
+                UITheme.CardSprite, UITheme.AccentSkyBlue);
+            LayoutElement le = cardBorder.gameObject.AddComponent<LayoutElement>();
+            le.preferredHeight = 70f;
+            le.flexibleWidth = 1f;
 
-            foreach (var rod in availableRods)
+            Image cardBg = UITheme.CreatePanel("CardBg", cardBorder.transform,
+                UITheme.CardSprite, UITheme.CardWhite);
+            UITheme.StretchFill(cardBg.rectTransform, 2f, 2f, 2f, 2f);
+
+            // Title + stats
+            string title = $"<b>{rod.displayName}</b> ({rod.tier} Tier)";
+            string stats = $"Unlocks: Tier {(int)rod.tier} Fish Species | High-Tier Catch Rate: +{((int)rod.tier * 30)}%";
+
+            TextMeshProUGUI titleLabel = UITheme.CreateLabel("Title", cardBg.transform,
+                title, UITheme.SmallFontSize + 1f, UITheme.TextBrown, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            titleLabel.richText = true;
+            RectTransform titleRt = titleLabel.rectTransform;
+            titleRt.anchorMin = new Vector2(0, 0.5f);
+            titleRt.anchorMax = new Vector2(0.7f, 1);
+            titleRt.offsetMin = new Vector2(16f, 0);
+            titleRt.offsetMax = Vector2.zero;
+
+            TextMeshProUGUI statsLabel = UITheme.CreateLabel("Stats", cardBg.transform,
+                stats, UITheme.SmallFontSize - 2f, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            RectTransform statsRt = statsLabel.rectTransform;
+            statsRt.anchorMin = new Vector2(0, 0);
+            statsRt.anchorMax = new Vector2(0.7f, 0.5f);
+            statsRt.offsetMin = new Vector2(16f, 0);
+            statsRt.offsetMax = Vector2.zero;
+
+            // Buy / Equipped button
+            if (isEquipped)
             {
-                if (rod == null) continue;
+                Button btn = UITheme.CreateButton("EquippedBtn", cardBg.transform, "EQUIPPED",
+                    UITheme.BackgroundMint, UITheme.TextBrown, UITheme.SmallFontSize, 120f, 38f);
+                btn.interactable = false;
+                RectTransform btnRt = btn.GetComponent<RectTransform>();
+                btnRt.anchorMin = new Vector2(1, 0.5f);
+                btnRt.anchorMax = new Vector2(1, 0.5f);
+                btnRt.pivot = new Vector2(1, 0.5f);
+                btnRt.anchoredPosition = new Vector2(-12f, 0);
+            }
+            else
+            {
+                bool canAfford = Wallet.Instance != null && Wallet.Instance.CanAfford(rod.cost);
+                Button btn = UITheme.CreateButton("BuyBtn", cardBg.transform, $"Buy ${rod.cost}",
+                    canAfford ? UITheme.Gold : UITheme.MutedButton,
+                    UITheme.TextWhite, UITheme.SmallFontSize, 120f, 38f);
+                btn.interactable = canAfford;
+                RectTransform btnRt = btn.GetComponent<RectTransform>();
+                btnRt.anchorMin = new Vector2(1, 0.5f);
+                btnRt.anchorMax = new Vector2(1, 0.5f);
+                btnRt.pivot = new Vector2(1, 0.5f);
+                btnRt.anchoredPosition = new Vector2(-12f, 0);
 
-                GUILayout.BeginHorizontal("box");
-                bool isEquipped = (currentRod == rod);
-                string title = $"<b>{rod.displayName}</b> ({rod.tier} Tier)";
-                string stats = $"Unlocks: Tier {(int)rod.tier} Fish Species | High-Tier Catch Rate: +{((int)rod.tier * 30)}%";
-                GUILayout.Label($"{title}\n<color=#aaaaaa>{stats}</color>");
-
-                GUILayout.FlexibleSpace();
-
-                if (isEquipped)
+                var capturedRod = rod;
+                btn.onClick.AddListener(() =>
                 {
-                    GUI.enabled = false;
-                    GUILayout.Button("EQUIPPED", GUILayout.Width(110), GUILayout.Height(35));
-                    GUI.enabled = true;
-                }
-                else
-                {
-                    bool canAfford = Wallet.Instance != null && Wallet.Instance.CanAfford(rod.cost);
-                    GUI.enabled = canAfford;
-                    if (GUILayout.Button($"Buy ${rod.cost}", GUILayout.Width(110), GUILayout.Height(35)))
+                    if (Wallet.Instance != null && Wallet.Instance.TrySpendGold(capturedRod.cost))
                     {
-                        if (Wallet.Instance != null && Wallet.Instance.TrySpendGold(rod.cost))
-                        {
-                            if (player != null) player.Rod = rod;
-                            PlaySFX(buyItemSound);
-                        }
+                        var player = PlayerController.Instance;
+                        if (player != null) player.Rod = capturedRod;
+                        PlaySFX(buyItemSound);
+                        RebuildShopContent();
                     }
-                    GUI.enabled = true;
-                }
-                GUILayout.EndHorizontal();
+                });
             }
-
-            GUILayout.EndScrollView();
-
-            GUILayout.FlexibleSpace();
-
-            // Exit Button
-            if (GUILayout.Button("Close Shop", GUILayout.Height(35)))
-            {
-                CloseShop();
-            }
-
-            GUILayout.EndArea();
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

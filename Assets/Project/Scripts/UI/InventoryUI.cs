@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Systems;
@@ -6,21 +8,20 @@ using LittleTrawling.Systems;
 namespace LittleTrawling.UI
 {
     /// <summary>
-    /// Displays a scrollable OnGUI inventory modal when pressing 'I'.
-    /// Shows fish sprite, name, description, size, weight, and sell price.
+    /// Displays a scrollable uGUI inventory modal when pressing 'I'.
+    /// Shows fish sprite, name, rarity badge, description, size, weight, and sell price.
+    /// Styled with Animal Crossing warm pastel theme.
     /// </summary>
     public class InventoryUI : MonoBehaviour
     {
         public static InventoryUI Instance { get; private set; }
 
         private bool _isOpen;
-        private Vector2 _scrollPosition;
-        private GUIStyle _cardStyle;
-        private GUIStyle _headerStyle;
-        private GUIStyle _titleStyle;
-        private GUIStyle _descStyle;
-        private GUIStyle _priceStyle;
-        private GUIStyle _emptyStyle;
+        private Canvas _canvas;
+        private GameObject _modalRoot;
+        private RectTransform _contentContainer;
+        private TextMeshProUGUI _headerLabel;
+        private GameObject _emptyState;
 
         private void Awake()
         {
@@ -30,6 +31,8 @@ namespace LittleTrawling.UI
                 return;
             }
             Instance = this;
+
+            BuildUI();
         }
 
         private void Start()
@@ -38,6 +41,11 @@ namespace LittleTrawling.UI
             {
                 InputReader.Instance.InventoryPressed += ToggleInventory;
                 InputReader.Instance.ClosePressed += OnClosePressed;
+            }
+
+            if (InventoryManager.Instance != null)
+            {
+                InventoryManager.Instance.OnInventoryChanged += RebuildCardList;
             }
         }
 
@@ -48,12 +56,19 @@ namespace LittleTrawling.UI
                 InputReader.Instance.InventoryPressed -= ToggleInventory;
                 InputReader.Instance.ClosePressed -= OnClosePressed;
             }
+            if (InventoryManager.Instance != null)
+            {
+                InventoryManager.Instance.OnInventoryChanged -= RebuildCardList;
+            }
+            if (_canvas != null) Destroy(_canvas.gameObject);
             if (Instance == this) Instance = null;
         }
 
         private void ToggleInventory()
         {
             _isOpen = !_isOpen;
+            _modalRoot.SetActive(_isOpen);
+            if (_isOpen) RebuildCardList();
         }
 
         private void OnClosePressed()
@@ -61,192 +76,262 @@ namespace LittleTrawling.UI
             if (_isOpen)
             {
                 _isOpen = false;
+                _modalRoot.SetActive(false);
             }
         }
 
-        private void OnGUI()
+        // ── UI Construction ────────────────────────────────────────────
+
+        private void BuildUI()
         {
-            if (!_isOpen) return;
+            _canvas = UITheme.CreateScreenCanvas("InventoryUI_Canvas", 40);
+            _canvas.transform.SetParent(transform, false);
 
-            InitStyles();
+            // Modal root (invisible until opened)
+            _modalRoot = new GameObject("ModalRoot");
+            _modalRoot.transform.SetParent(_canvas.transform, false);
+            RectTransform modalRootRt = _modalRoot.AddComponent<RectTransform>();
+            UITheme.StretchFill(modalRootRt);
 
-            int windowWidth = 640;
-            int windowHeight = 520;
-            Rect windowRect = new Rect((Screen.width - windowWidth) / 2f, (Screen.height - windowHeight) / 2f, windowWidth, windowHeight);
+            // Dim overlay
+            UITheme.CreateDimOverlay("DimOverlay", _modalRoot.transform);
 
-            // Modal Background Box
-            GUI.Box(windowRect, "", GUI.skin.box);
-            GUI.Box(windowRect, "", GUI.skin.window);
+            // ── Modal Panel ──
+            // Gold border
+            Image panelBorder = UITheme.CreatePanel("PanelBorder", _modalRoot.transform,
+                UITheme.PanelSprite, UITheme.Gold);
+            UITheme.CenterWithSize(panelBorder.rectTransform, 800f, 660f);
+
+            // Warm white fill
+            Image panelBg = UITheme.CreatePanel("PanelBg", panelBorder.transform,
+                UITheme.PanelSprite, UITheme.CardWhite);
+            UITheme.StretchFill(panelBg.rectTransform, 4f, 4f, 4f, 4f);
+
+            // ── Header Bar ──
+            RectTransform headerBar = UITheme.CreateRect("HeaderBar", panelBg.transform);
+            headerBar.anchorMin = new Vector2(0, 1);
+            headerBar.anchorMax = new Vector2(1, 1);
+            headerBar.pivot = new Vector2(0.5f, 1);
+            headerBar.sizeDelta = new Vector2(0, 60f);
+            headerBar.anchoredPosition = Vector2.zero;
+
+            _headerLabel = UITheme.CreateLabel("HeaderLabel", headerBar, "FISH INVENTORY",
+                UITheme.HeaderFontSize - 2f, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
+            RectTransform headerLabelRt = _headerLabel.rectTransform;
+            headerLabelRt.anchorMin = Vector2.zero;
+            headerLabelRt.anchorMax = Vector2.one;
+            headerLabelRt.offsetMin = new Vector2(UITheme.Padding, 0);
+            headerLabelRt.offsetMax = new Vector2(-60f, 0);
+
+            // Close button [✕]
+            Button closeBtn = UITheme.CreateButton("CloseBtn", headerBar, "✕",
+                UITheme.Gold, UITheme.TextWhite, UITheme.BodyFontSize, 48f, 48f);
+            RectTransform closeBtnRt = closeBtn.GetComponent<RectTransform>();
+            closeBtnRt.anchorMin = new Vector2(1, 0.5f);
+            closeBtnRt.anchorMax = new Vector2(1, 0.5f);
+            closeBtnRt.pivot = new Vector2(1, 0.5f);
+            closeBtnRt.anchoredPosition = new Vector2(-12f, 0);
+            closeBtn.onClick.AddListener(() =>
+            {
+                _isOpen = false;
+                _modalRoot.SetActive(false);
+            });
+
+            // ── Separator ──
+            Image sep = UITheme.CreatePanel("Separator", panelBg.transform, null, UITheme.AccentSkyBlue);
+            RectTransform sepRt = sep.rectTransform;
+            sepRt.anchorMin = new Vector2(0, 1);
+            sepRt.anchorMax = new Vector2(1, 1);
+            sepRt.pivot = new Vector2(0.5f, 1);
+            sepRt.sizeDelta = new Vector2(0, 2);
+            sepRt.anchoredPosition = new Vector2(0, -54f);
+            sepRt.offsetMin = new Vector2(UITheme.Padding, sepRt.offsetMin.y);
+            sepRt.offsetMax = new Vector2(-UITheme.Padding, sepRt.offsetMax.y);
+
+            // ── Scroll View ──
+            var (scrollRect, content) = UITheme.CreateScrollView("FishScroll", panelBg.transform);
+            RectTransform scrollRt = scrollRect.GetComponent<RectTransform>();
+            scrollRt.anchorMin = Vector2.zero;
+            scrollRt.anchorMax = Vector2.one;
+            scrollRt.offsetMin = new Vector2(UITheme.Padding, UITheme.Padding);
+            scrollRt.offsetMax = new Vector2(-UITheme.Padding, -62f);
+            _contentContainer = content;
+
+            // ── Empty State ──
+            _emptyState = new GameObject("EmptyState");
+            _emptyState.transform.SetParent(panelBg.transform, false);
+            RectTransform emptyRt = _emptyState.AddComponent<RectTransform>();
+            UITheme.CenterWithSize(emptyRt, 400f, 160f);
+
+            TextMeshProUGUI emptyTitle = UITheme.CreateLabel("EmptyTitle", _emptyState.transform,
+                "Your inventory is empty!",
+                UITheme.TitleFontSize, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.Center);
+            RectTransform emptyTitleRt = emptyTitle.rectTransform;
+            emptyTitleRt.anchorMin = new Vector2(0, 0.5f);
+            emptyTitleRt.anchorMax = new Vector2(1, 1);
+            emptyTitleRt.offsetMin = Vector2.zero;
+            emptyTitleRt.offsetMax = Vector2.zero;
+
+            TextMeshProUGUI emptySub = UITheme.CreateLabel("EmptySub", _emptyState.transform,
+                "Hold and release <b>[F]</b> near ocean water to catch fish.",
+                UITheme.SmallFontSize, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.Center);
+            emptySub.textWrappingMode = TextWrappingModes.Normal;
+            emptySub.richText = true;
+            RectTransform emptySubRt = emptySub.rectTransform;
+            emptySubRt.anchorMin = new Vector2(0, 0);
+            emptySubRt.anchorMax = new Vector2(1, 0.5f);
+            emptySubRt.offsetMin = Vector2.zero;
+            emptySubRt.offsetMax = Vector2.zero;
+
+            _emptyState.SetActive(false);
+            _modalRoot.SetActive(false);
+        }
+
+        // ── Card List Rebuild ──────────────────────────────────────────
+
+        private void RebuildCardList()
+        {
+            // Clear existing cards
+            for (int i = _contentContainer.childCount - 1; i >= 0; i--)
+            {
+                Destroy(_contentContainer.GetChild(i).gameObject);
+            }
 
             var mgr = InventoryManager.Instance;
             var items = mgr != null ? mgr.Items : null;
             int itemCount = items != null ? items.Count : 0;
             int totalValue = mgr != null ? mgr.CalculateTotalValue() : 0;
 
-            // Header Section
-            Rect headerRect = new Rect(windowRect.x + 15, windowRect.y + 12, windowRect.width - 30, 40);
-            GUI.Label(headerRect, $"<size=20><b>FISH INVENTORY</b></size> <size=13><color=#aaaaaa>({itemCount} Caught  |  Total Value: <color=yellow>${totalValue} Gold</color>)</color></size>", _headerStyle);
-
-            // Close Button [X]
-            Rect closeRect = new Rect(windowRect.x + windowRect.width - 45, windowRect.y + 12, 30, 28);
-            if (GUI.Button(closeRect, "<b>X</b>"))
-            {
-                _isOpen = false;
-            }
-
-            // Separator Line
-            GUI.Box(new Rect(windowRect.x + 15, windowRect.y + 54, windowRect.width - 30, 2), "");
-
-            // Empty Inventory State
+            // Update header
             if (itemCount == 0)
             {
-                Rect emptyRect = new Rect(windowRect.x + 20, windowRect.y + 150, windowRect.width - 40, 160);
-                GUI.Label(emptyRect, "<size=18><b>Your inventory is empty!</b></size>\n\n<size=14><color=#bbbbbb>Hold and release <b>[F]</b> near ocean water to catch fish.</color></size>", _emptyStyle);
+                _headerLabel.text = "FISH INVENTORY";
+                _emptyState.SetActive(true);
                 return;
             }
 
-            // Scrollable List View
-            Rect scrollOuterRect = new Rect(windowRect.x + 15, windowRect.y + 64, windowRect.width - 30, windowHeight - 80);
-            int cardHeight = 105;
-            int spacing = 8;
-            int contentHeight = itemCount * (cardHeight + spacing);
-            Rect contentRect = new Rect(0, 0, scrollOuterRect.width - 24, contentHeight);
-
-            _scrollPosition = GUI.BeginScrollView(scrollOuterRect, _scrollPosition, contentRect);
+            _emptyState.SetActive(false);
+            _headerLabel.text = $"FISH INVENTORY  <size={UITheme.SmallFontSize}><color=#{ColorUtility.ToHtmlStringRGB(UITheme.TextMuted)}>({itemCount} Caught  |  Total: <color=#{ColorUtility.ToHtmlStringRGB(UITheme.TextGold)}>${totalValue} Gold</color>)</color></size>";
+            _headerLabel.richText = true;
 
             for (int i = 0; i < itemCount; i++)
             {
                 var item = items[i];
                 if (item == null) continue;
-
-                Rect cardRect = new Rect(0, i * (cardHeight + spacing), contentRect.width, cardHeight);
-                GUI.Box(cardRect, "", _cardStyle);
-
-                // Fish 2D Sprite Preview
-                Rect spriteRect = new Rect(cardRect.x + 12, cardRect.y + 12, 80, 80);
-                DrawFishSprite(spriteRect, item.species != null ? item.species.sprite : null);
-
-                // Fish Info Column
-                float textLeft = cardRect.x + 104;
-                float textWidth = cardRect.width - 220;
-
-                string rarityColor = GetRarityColorHex(item.species != null ? item.species.rarity : FishRarity.Common);
-                string fishName = item.species != null ? item.species.displayName : "Unknown Fish";
-                string rarityText = item.species != null ? item.species.rarity.ToString() : "Common";
-
-                Rect titleRect = new Rect(textLeft, cardRect.y + 8, textWidth, 26);
-                GUI.Label(titleRect, $"<size=15><b>{fishName}</b></size>  <size=12><color={rarityColor}><b>[{rarityText}]</b></color></size>", _titleStyle);
-
-                string description = item.species != null ? item.species.description : "No description available.";
-                Rect descRect = new Rect(textLeft, cardRect.y + 34, textWidth, 38);
-                GUI.Label(descRect, $"<size=12><color=#cccccc><i>\"{description}\"</i></color></size>", _descStyle);
-
-                Rect statsRect = new Rect(textLeft, cardRect.y + 74, textWidth, 22);
-                GUI.Label(statsRect, $"<size=12><color=#99d6ff>Size: <b>{item.sizeCm:F1} cm</b>  |  Weight: <b>{item.weightKg:F2} kg</b></color></size>", _titleStyle);
-
-                // Sell Price Badge Column (Right Aligned)
-                Rect priceRect = new Rect(cardRect.x + cardRect.width - 110, cardRect.y + 35, 100, 34);
-                GUI.Box(priceRect, "");
-                GUI.Label(priceRect, $"<size=14><color=yellow><b>${item.sellPrice}</b></color></size>", _priceStyle);
+                BuildFishCard(item);
             }
-
-            GUI.EndScrollView();
         }
 
-        private static GUIStyle _noSpriteStyle;
-
-        private void DrawFishSprite(Rect rect, Sprite sprite)
+        private void BuildFishCard(CaughtFish item)
         {
-            GUI.Box(rect, "");
-            if (sprite != null && sprite.texture != null)
+            // Card border (subtle sky blue)
+            Image cardBorder = UITheme.CreatePanel("FishCard", _contentContainer,
+                UITheme.CardSprite, UITheme.AccentSkyBlue);
+            RectTransform cardBorderRt = cardBorder.rectTransform;
+            LayoutElement le = cardBorder.gameObject.AddComponent<LayoutElement>();
+            le.preferredHeight = UITheme.CardHeight;
+            le.flexibleWidth = 1f;
+
+            // Card background (warm white)
+            Image cardBg = UITheme.CreatePanel("CardBg", cardBorder.transform,
+                UITheme.CardSprite, UITheme.CardWhite);
+            UITheme.StretchFill(cardBg.rectTransform, 2f, 2f, 2f, 2f);
+
+            // ── Fish Sprite Thumbnail ──
+            Image spriteFrame = UITheme.CreatePanel("SpriteFrame", cardBg.transform,
+                UITheme.CardSprite, UITheme.BackgroundMint);
+            RectTransform spriteFrameRt = spriteFrame.rectTransform;
+            spriteFrameRt.anchorMin = new Vector2(0, 0.5f);
+            spriteFrameRt.anchorMax = new Vector2(0, 0.5f);
+            spriteFrameRt.pivot = new Vector2(0, 0.5f);
+            spriteFrameRt.sizeDelta = new Vector2(110f, 110f);
+            spriteFrameRt.anchoredPosition = new Vector2(12f, 0);
+
+            Sprite fishSprite = item.species != null ? item.species.sprite : null;
+            if (fishSprite != null && fishSprite.texture != null)
             {
-                float targetWidth = 70f;
-                float aspect = sprite.rect.height / Mathf.Max(1f, sprite.rect.width);
-                float targetHeight = targetWidth * aspect;
-
-                if (targetHeight > rect.height - 8f)
-                {
-                    targetHeight = rect.height - 8f;
-                    targetWidth = targetHeight / Mathf.Max(0.01f, aspect);
-                }
-
-                Rect drawRect = new Rect(
-                    rect.x + (rect.width - targetWidth) / 2f,
-                    rect.y + (rect.height - targetHeight) / 2f,
-                    targetWidth,
-                    targetHeight
-                );
-
-                Rect uv = new Rect(
-                    sprite.rect.x / sprite.texture.width,
-                    sprite.rect.y / sprite.texture.height,
-                    sprite.rect.width / sprite.texture.width,
-                    sprite.rect.height / sprite.texture.height
-                );
-
-                GUI.DrawTextureWithTexCoords(drawRect, sprite.texture, uv);
+                Image fishImg = UITheme.CreatePanel("FishSprite", spriteFrame.transform, fishSprite, Color.white);
+                fishImg.preserveAspect = true;
+                UITheme.StretchFill(fishImg.rectTransform, 6f, 6f, 6f, 6f);
             }
             else
             {
-                GUI.Label(rect, "<size=13><color=#aaaaaa>NO SPRITE</color></size>", _noSpriteStyle);
+                TextMeshProUGUI noSprite = UITheme.CreateLabel("NoSprite", spriteFrame.transform,
+                    "NO\nSPRITE", UITheme.SmallFontSize - 2f, UITheme.TextMuted, FontStyles.Italic, TextAlignmentOptions.Center);
+                noSprite.textWrappingMode = TextWrappingModes.Normal;
+                UITheme.StretchFill(noSprite.rectTransform);
             }
+
+            // ── Info Column ──
+            float textLeft = 136f;
+            float textWidth = -260f; // negative = offset from right
+
+            // Name + Rarity
+            string fishName = item.species != null ? item.species.displayName : "Unknown Fish";
+            FishRarity rarity = item.species != null ? item.species.rarity : FishRarity.Common;
+            string rarityHex = GetRarityColorHex(rarity);
+            string rarityText = rarity.ToString();
+
+            TextMeshProUGUI nameLabel = UITheme.CreateLabel("NameLabel", cardBg.transform,
+                $"{fishName}  <size={UITheme.SmallFontSize}><color={rarityHex}><b>[{rarityText}]</b></color></size>",
+                20f, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
+            nameLabel.richText = true;
+            RectTransform nameLabelRt = nameLabel.rectTransform;
+            nameLabelRt.anchorMin = new Vector2(0, 0.7f);
+            nameLabelRt.anchorMax = new Vector2(1, 1f);
+            nameLabelRt.offsetMin = new Vector2(textLeft, 0);
+            nameLabelRt.offsetMax = new Vector2(textWidth, -6f);
+
+            // Description
+            string desc = item.species != null ? item.species.description : "No description available.";
+            TextMeshProUGUI descLabel = UITheme.CreateLabel("DescLabel", cardBg.transform,
+                $"<i>\"{desc}\"</i>",
+                UITheme.SmallFontSize, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            descLabel.richText = true;
+            descLabel.textWrappingMode = TextWrappingModes.Normal;
+            descLabel.overflowMode = TextOverflowModes.Ellipsis;
+            RectTransform descLabelRt = descLabel.rectTransform;
+            descLabelRt.anchorMin = new Vector2(0, 0.35f);
+            descLabelRt.anchorMax = new Vector2(1, 0.7f);
+            descLabelRt.offsetMin = new Vector2(textLeft, 0);
+            descLabelRt.offsetMax = new Vector2(textWidth, 0);
+
+            // Stats
+            TextMeshProUGUI statsLabel = UITheme.CreateLabel("StatsLabel", cardBg.transform,
+                $"Size: <b>{item.sizeCm:F1} cm</b>  |  Weight: <b>{item.weightKg:F2} kg</b>",
+                UITheme.SmallFontSize, UITheme.AccentSkyBlue, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            statsLabel.richText = true;
+            Color statsColor = new Color32(70, 150, 200, 255);
+            statsLabel.color = statsColor;
+            RectTransform statsLabelRt = statsLabel.rectTransform;
+            statsLabelRt.anchorMin = new Vector2(0, 0f);
+            statsLabelRt.anchorMax = new Vector2(1, 0.35f);
+            statsLabelRt.offsetMin = new Vector2(textLeft, 6f);
+            statsLabelRt.offsetMax = new Vector2(textWidth, 0);
+
+            // ── Price Badge (right side) ──
+            Image priceBadge = UITheme.CreatePanel("PriceBadge", cardBg.transform,
+                UITheme.BadgeSprite, UITheme.Gold);
+            RectTransform priceRt = priceBadge.rectTransform;
+            priceRt.anchorMin = new Vector2(1, 0.5f);
+            priceRt.anchorMax = new Vector2(1, 0.5f);
+            priceRt.pivot = new Vector2(1, 0.5f);
+            priceRt.sizeDelta = new Vector2(120f, 44f);
+            priceRt.anchoredPosition = new Vector2(-12f, 0);
+
+            TextMeshProUGUI priceLabel = UITheme.CreateLabel("PriceLabel", priceBadge.transform,
+                $"${item.sellPrice}", UITheme.BodyFontSize, UITheme.TextWhite, FontStyles.Bold, TextAlignmentOptions.Center);
+            UITheme.StretchFill(priceLabel.rectTransform);
         }
 
         private string GetRarityColorHex(FishRarity rarity)
         {
             return rarity switch
             {
-                FishRarity.Common => "#55ff55",
-                FishRarity.Uncommon => "#55aaff",
-                FishRarity.Rare => "#ff55ff",
-                _ => "#ffffff"
-            };
-        }
-
-        private void InitStyles()
-        {
-            if (_cardStyle != null) return;
-
-            _cardStyle = new GUIStyle(GUI.skin.box)
-            {
-                padding = new RectOffset(6, 6, 6, 6)
-            };
-
-            _headerStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                richText = true
-            };
-
-            _titleStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                richText = true
-            };
-
-            _descStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                wordWrap = true,
-                richText = true
-            };
-
-            _priceStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                richText = true
-            };
-
-            _emptyStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                richText = true
-            };
-
-            _noSpriteStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                richText = true
+                FishRarity.Common => "#6BBF6B",
+                FishRarity.Uncommon => "#5BA8D8",
+                FishRarity.Rare => "#E88BE8",
+                _ => "#FFFFFF"
             };
         }
 

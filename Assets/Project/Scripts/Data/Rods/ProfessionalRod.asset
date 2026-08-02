@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Data.Rod
   displayName: Professional Rod
   cost: 10000
-  tier: 1
+  tier: 2
