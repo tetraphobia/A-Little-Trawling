@@ -11,13 +11,6 @@ namespace LittleTrawling.UI
     {
         public static FishingUI Instance { get; private set; }
 
-        private bool _showPopup;
-        private string _titleText;
-        private string _statsText;
-        private string _goldText;
-        private float _popupTimer;
-        private const float PopupDuration = 3.5f;
-
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -28,42 +21,9 @@ namespace LittleTrawling.UI
             Instance = this;
         }
 
-        private void Start()
-        {
-            if (FishingManager.Instance != null)
-            {
-                FishingManager.Instance.OnFishCaught += ShowCatchPopup;
-            }
-        }
-
         private void OnDestroy()
         {
-            if (FishingManager.Instance != null)
-            {
-                FishingManager.Instance.OnFishCaught -= ShowCatchPopup;
-            }
             if (Instance == this) Instance = null;
-        }
-
-        private void ShowCatchPopup(Fish species, float sizeCm, float weightKg, int goldEarned)
-        {
-            _titleText = $"<size=20><b>Caught a {species.displayName.ToUpper()}!</b></size>";
-            _statsText = $"<size=15>Length: <b>{sizeCm:F1} cm</b> | Weight: <b>{weightKg:F2} kg</b></size>";
-            _goldText = $"<size=18><b>Earned ${goldEarned} Gold</b></size>";
-            _popupTimer = PopupDuration;
-            _showPopup = true;
-        }
-
-        private void Update()
-        {
-            if (_showPopup)
-            {
-                _popupTimer -= Time.deltaTime;
-                if (_popupTimer <= 0f)
-                {
-                    _showPopup = false;
-                }
-            }
         }
 
         private Texture2D _fillTexture;
@@ -96,69 +56,52 @@ namespace LittleTrawling.UI
 
         private void OnGUI()
         {
+            if (FishingManager.Instance == null) return;
+
+            FishingState state = FishingManager.Instance.CurrentState;
+            if (state == FishingState.Idle) return;
+
             GUIStyle style = GetBannerStyle();
 
-            if (FishingManager.Instance != null)
+            switch (state)
             {
-                FishingState state = FishingManager.Instance.CurrentState;
-                if (state != FishingState.Idle)
-                {
-                    switch (state)
+                case FishingState.Charging:
                     {
-                        case FishingState.Charging:
-                            {
-                                float ratio = FishingManager.Instance.ChargeRatio;
-                                int width = 300;
-                                int height = 34;
-                                Rect outer = new Rect((Screen.width - width) / 2f, Screen.height - 120, width, height);
+                        float ratio = FishingManager.Instance.ChargeRatio;
+                        int width = 300;
+                        int height = 34;
+                        Rect outer = new Rect((Screen.width - width) / 2f, Screen.height - 120, width, height);
 
-                                GUI.Box(outer, "");
-                                Rect inner = new Rect(outer.x + 4, outer.y + 4, (outer.width - 8) * ratio, outer.height - 8);
-                                GUI.DrawTexture(inner, GetFillTexture());
+                        GUI.Box(outer, "");
+                        Rect inner = new Rect(outer.x + 4, outer.y + 4, (outer.width - 8) * ratio, outer.height - 8);
+                        GUI.DrawTexture(inner, GetFillTexture());
 
-                                GUI.Label(outer, $"<size=15><b>Casting... {Mathf.RoundToInt(ratio * 100)}%</b></size>", style);
-                            }
-                            break;
-
-                        case FishingState.WaitingForBite:
-                            {
-                                int width = 340;
-                                int height = 35;
-                                Rect rect = new Rect((Screen.width - width) / 2f, Screen.height - 110, width, height);
-
-                                GUI.Box(rect, "");
-                                GUI.Label(rect, "<size=14>Waiting for a bite... (Press <b>[F]</b> to recall)</size>", style);
-                            }
-                            break;
-
-                        case FishingState.BiteActive:
-                            {
-                                int width = 360;
-                                int height = 55;
-                                Rect rect = new Rect((Screen.width - width) / 2f, Screen.height - 180, width, height);
-
-                                GUI.Box(rect, "");
-                                GUI.Label(rect, "<size=21><color=yellow><b>BITE! PRESS [F] NOW!</b></color></size>", style);
-                            }
-                            break;
+                        GUI.Label(outer, $"<size=15><b>Casting... {Mathf.RoundToInt(ratio * 100)}%</b></size>", style);
                     }
-                }
+                    break;
+
+                case FishingState.WaitingForBite:
+                    {
+                        int width = 340;
+                        int height = 35;
+                        Rect rect = new Rect((Screen.width - width) / 2f, Screen.height - 110, width, height);
+
+                        GUI.Box(rect, "");
+                        GUI.Label(rect, "<size=14>Waiting for a bite... (Press <b>[F]</b> to recall)</size>", style);
+                    }
+                    break;
+
+                case FishingState.BiteActive:
+                    {
+                        int width = 360;
+                        int height = 55;
+                        Rect rect = new Rect((Screen.width - width) / 2f, Screen.height - 180, width, height);
+
+                        GUI.Box(rect, "");
+                        GUI.Label(rect, "<size=21><color=yellow><b>BITE! PRESS [F] NOW!</b></color></size>", style);
+                    }
+                    break;
             }
-
-            if (!_showPopup) return;
-
-            int popupWidth = 380;
-            int popupHeight = 100;
-            Rect popupRect = new Rect((Screen.width - popupWidth) / 2f, 50, popupWidth, popupHeight);
-
-            GUI.Box(popupRect, "");
-            GUILayout.BeginArea(new Rect(popupRect.x + 10, popupRect.y + 10, popupRect.width - 20, popupRect.height - 20));
-
-            GUILayout.Label(_titleText, style);
-            GUILayout.Label(_statsText, style);
-            GUILayout.Label(_goldText, style);
-
-            GUILayout.EndArea();
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

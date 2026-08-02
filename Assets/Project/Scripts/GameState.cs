@@ -5,6 +5,7 @@ namespace LittleTrawling.Core
         Walking,   // Default movement state
         Piloting,  // Piloting a ship and sailing it around
         Fishing,   // Fishing for fishies
-        Shopping   // Buying gear at the shop
+        Shopping,  // Buying gear at the shop
+        Dialogue   // Engaging in conversation dialogue
     }
 }

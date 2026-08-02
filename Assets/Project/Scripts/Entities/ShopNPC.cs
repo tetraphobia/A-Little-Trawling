@@ -1,6 +1,7 @@
 using UnityEngine;
 using LittleTrawling.Core;
 using LittleTrawling.Interaction;
+using LittleTrawling.Systems;
 
 namespace LittleTrawling.Entities
 {
@@ -10,6 +11,14 @@ namespace LittleTrawling.Entities
     /// </summary>
     public class ShopNPC : MonoBehaviour, IInteractable
     {
+        [Tooltip("Greeting dialogue lines spoken by the shopkeeper when approached.")]
+        [TextArea(2, 4)]
+        [SerializeField] private string[] greetingLines = new string[]
+        {
+            "Ahoy, fisherbird! Welcome to my dockside shop.",
+            "Take a look at my latest boat engines and fishing rods!"
+        };
+
         private void Awake()
         {
             // Ensure InteractionTrigger exists
@@ -21,13 +30,25 @@ namespace LittleTrawling.Entities
 
         public string GetInteractionPrompt()
         {
-            return "Press <color=yellow><b>[E]</b></color> to open Shop";
+            return "Press <color=yellow><b>[E]</b></color> to talk to Shopkeeper";
         }
 
         public void Interact()
         {
             var gm = GameManager.Instance;
-            if (gm != null && gm.IsState(GameState.Walking))
+            if (gm == null || !gm.IsState(GameState.Walking)) return;
+
+            if (DialogueManager.Instance != null)
+            {
+                DialogueManager.Instance.ShowDialogue("Shopkeeper", greetingLines, () =>
+                {
+                    if (GameManager.Instance != null)
+                    {
+                        GameManager.Instance.SetState(GameState.Shopping);
+                    }
+                });
+            }
+            else
             {
                 gm.SetState(GameState.Shopping);
             }
