@@ -15,14 +15,16 @@ namespace LittleTrawling.Core
 
         public Vector2 MoveInput { get; private set; }
         public Vector2 LookInput { get; private set; }
-        public bool CastHeld { get; private set; }
+        public bool FishHeld { get; private set; }
         public bool CameraLookHeld { get; private set; }
         public bool SprintHeld { get; private set; }
 
-        public event Action CastPressed;
-        public event Action CastReleased;
+        public event Action FishPressed;
+        public event Action FishReleased;
         public event Action InteractPressed;
         public event Action JumpPressed;
+
+        private InputAction _fishAction;
 
         private void Awake()
         {
@@ -46,14 +48,12 @@ namespace LittleTrawling.Core
             _input.Gameplay.Look.canceled          += OnLook;
             _input.Gameplay.CameraLook.performed   += OnCameraLookDown;
             _input.Gameplay.CameraLook.canceled    += OnCameraLookUp;
-            _input.Gameplay.Cast.performed         += OnCastDown;
-            _input.Gameplay.Cast.canceled          += OnCastUp;
             _input.Gameplay.Interact.performed     += OnInteract;
 
-            TryBindSprintAndJump();
+            TryBindOptionalActions();
         }
 
-        private void TryBindSprintAndJump()
+        private void TryBindOptionalActions()
         {
             try
             {
@@ -69,10 +69,17 @@ namespace LittleTrawling.Core
                 {
                     jumpAction.performed += OnJumpDown;
                 }
+
+                _fishAction = _input.Gameplay.Get().FindAction("Fish");
+                if (_fishAction != null)
+                {
+                    _fishAction.performed += OnFishDown;
+                    _fishAction.canceled  += OnFishUp;
+                }
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[InputReader] Sprint/Jump binding info: {ex.Message}");
+                Debug.LogWarning($"[InputReader] Optional action binding info: {ex.Message}");
             }
         }
 
@@ -86,8 +93,6 @@ namespace LittleTrawling.Core
                 _input.Gameplay.Look.canceled          -= OnLook;
                 _input.Gameplay.CameraLook.performed   -= OnCameraLookDown;
                 _input.Gameplay.CameraLook.canceled    -= OnCameraLookUp;
-                _input.Gameplay.Cast.performed         -= OnCastDown;
-                _input.Gameplay.Cast.canceled          -= OnCastUp;
                 _input.Gameplay.Interact.performed     -= OnInteract;
 
                 try
@@ -103,6 +108,12 @@ namespace LittleTrawling.Core
                     if (jumpAction != null)
                     {
                         jumpAction.performed -= OnJumpDown;
+                    }
+
+                    if (_fishAction != null)
+                    {
+                        _fishAction.performed -= OnFishDown;
+                        _fishAction.canceled  -= OnFishUp;
                     }
                 }
                 catch { }
@@ -121,16 +132,16 @@ namespace LittleTrawling.Core
         private void OnSprintUp(InputAction.CallbackContext ctx) => SprintHeld = false;
         private void OnJumpDown(InputAction.CallbackContext ctx) => JumpPressed?.Invoke();
 
-        private void OnCastDown(InputAction.CallbackContext ctx)
+        private void OnFishDown(InputAction.CallbackContext ctx)
         {
-            CastHeld = true;
-            CastPressed?.Invoke();
+            FishHeld = true;
+            FishPressed?.Invoke();
         }
 
-        private void OnCastUp(InputAction.CallbackContext ctx)
+        private void OnFishUp(InputAction.CallbackContext ctx)
         {
-            CastHeld = false;
-            CastReleased?.Invoke();
+            FishHeld = false;
+            FishReleased?.Invoke();
         }
 
         private void OnInteract(InputAction.CallbackContext ctx) => InteractPressed?.Invoke();

@@ -34,15 +34,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Cast",
-                    "type": "Button",
-                    "id": "ec74496b-cc9a-4d39-9262-ffbea70a4b41",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Interact",
                     "type": "Button",
                     "id": "dc1495e4-3641-49cb-bdbc-486ebab5dc1d",
@@ -64,6 +55,15 @@
                     "name": "Sprint",
                     "type": "Button",
                     "id": "97ff1fc6-d819-4203-b24c-8940bc6c09a7",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Fish",
+                    "type": "Button",
+                    "id": "95ab4cd6-9196-44bf-8b01-296c66b75619",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -194,17 +194,6 @@
                 },
                 {
                     "name": "",
-                    "id": "38e75d83-2f39-4ccd-893e-e6743d3fe780",
-                    "path": "<Mouse>/leftButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Cast",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "9a2b4082-e0dc-4eff-8fd4-eb4aafe6a794",
                     "path": "<Keyboard>/e",
                     "interactions": "",
@@ -255,6 +244,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Sprint",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "19670147-39bb-4fd1-adbc-723072c20d26",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Fish",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
