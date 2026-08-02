@@ -37,9 +37,9 @@ namespace LittleTrawling.Vehicles
             var gm = GameManager.Instance;
             if (gm != null && gm.IsState(GameState.Piloting))
             {
-                return "Press <color=yellow><b>[E]</b></color> to exit boat";
+                return "Press <color=#EE5D5D><b>[E]</b></color> to exit boat";
             }
-            return "Press <color=yellow><b>[E]</b></color> to enter boat";
+            return "Press <color=#EE5D5D><b>[E]</b></color> to enter boat";
         }
 
         public void Interact()

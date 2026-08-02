@@ -47,9 +47,6 @@ namespace LittleTrawling.UI
             _canvas = UITheme.CreateScreenCanvas("DialogueUI_Canvas", 100);
             _canvas.transform.SetParent(transform, false);
 
-            // ── Dialogue card container ──
-
-            // Gold outer border
             Image border = UITheme.CreatePanel("DialogueBorder", _canvas.transform,
                 UITheme.PanelSprite, UITheme.Gold);
             RectTransform borderRt = border.rectTransform;
@@ -60,12 +57,10 @@ namespace LittleTrawling.UI
             borderRt.anchoredPosition = new Vector2(0, 36f);
             _dialogueRoot = border.gameObject;
 
-            // Warm white inner card
             Image card = UITheme.CreatePanel("DialogueCard", border.transform,
                 UITheme.PanelSprite, UITheme.CardWhite);
             UITheme.StretchFill(card.rectTransform, 4f, 4f, 4f, 4f);
 
-            // ── Speaker Name Badge (floating above top-left) ──
             Image badgeBorder = UITheme.CreatePanel("BadgeBorder", border.transform,
                 UITheme.BadgeSprite, UITheme.Gold);
             RectTransform badgeBorderRt = badgeBorder.rectTransform;
@@ -83,7 +78,6 @@ namespace LittleTrawling.UI
                 UITheme.BodyFontSize, UITheme.TextWhite, FontStyles.Bold, TextAlignmentOptions.Center);
             UITheme.StretchFill(_badgeLabel.rectTransform);
 
-            // ── Body text ──
             _bodyText = UITheme.CreateLabel("BodyText", card.transform, "",
                 24f, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.TopLeft);
             _bodyText.textWrappingMode = TextWrappingModes.Normal;
@@ -94,9 +88,8 @@ namespace LittleTrawling.UI
             bodyRt.offsetMin = new Vector2(28f, 16f);
             bodyRt.offsetMax = new Vector2(-28f, -16f);
 
-            // ── Continuation prompt ──
             _promptText = UITheme.CreateLabel("PromptText", card.transform, "▼ Press [E]",
-                UITheme.SmallFontSize, UITheme.TextGold, FontStyles.Bold, TextAlignmentOptions.BottomRight);
+                UITheme.SmallFontSize, UITheme.TextPastelRed, FontStyles.Bold, TextAlignmentOptions.BottomRight);
             RectTransform promptRt = _promptText.rectTransform;
             promptRt.anchorMin = new Vector2(1, 0);
             promptRt.anchorMax = new Vector2(1, 0);
@@ -105,7 +98,6 @@ namespace LittleTrawling.UI
             promptRt.anchoredPosition = new Vector2(-16f, 8f);
             _promptText.gameObject.SetActive(false);
 
-            // Hide initially
             _dialogueRoot.SetActive(false);
         }
 
@@ -129,27 +121,22 @@ namespace LittleTrawling.UI
             var session = mgr.CurrentSession;
             if (session == null) return;
 
-            // Update speaker badge
             _badgeLabel.text = session.speakerName;
             _badgeImage.color = session.speakerColor;
 
-            // Resize badge to fit speaker name
             float textWidth = _badgeLabel.preferredWidth + 32f;
             float badgeWidth = Mathf.Max(120f, textWidth);
             RectTransform badgeBorderRt = _badgeImage.transform.parent.GetComponent<RectTransform>();
             badgeBorderRt.sizeDelta = new Vector2(badgeWidth, 38f);
 
-            // Update body text (typewriter)
             _bodyText.text = mgr.DisplayedText;
 
-            // Update continuation prompt
             if (mgr.IsLineFullyTyped)
             {
                 if (!_promptText.gameObject.activeSelf) _promptText.gameObject.SetActive(true);
 
-                // Pulse alpha
                 float alpha = 0.5f + Mathf.PingPong(Time.time * 3f, 0.5f);
-                Color c = UITheme.TextGold;
+                Color c = UITheme.TextPastelRed;
                 c.a = alpha;
                 _promptText.color = c;
             }

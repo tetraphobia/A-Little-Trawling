@@ -58,18 +58,15 @@ namespace LittleTrawling.Interaction
             _canvas = UITheme.CreateScreenCanvas("InteractionSystem_Canvas", 35);
             _canvas.transform.SetParent(transform, false);
 
-            // Border (gold)
             Image border = UITheme.CreatePanel("PromptBorder", _canvas.transform,
                 UITheme.BadgeSprite, UITheme.Gold);
             UITheme.AnchorBottomCenter(border.rectTransform, 520f, 64f, 120f);
             _promptRoot = border.gameObject;
 
-            // Background pill (warm white)
             Image bg = UITheme.CreatePanel("PromptBg", border.transform,
                 UITheme.BadgeSprite, UITheme.CardWhite);
             UITheme.StretchFill(bg.rectTransform, 3f, 3f, 3f, 3f);
 
-            // Label
             _promptLabel = UITheme.CreateLabel("PromptLabel", bg.transform, "",
                 UITheme.TitleFontSize, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.Center);
             _promptLabel.richText = true;

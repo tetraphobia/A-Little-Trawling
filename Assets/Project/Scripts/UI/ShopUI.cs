@@ -194,26 +194,21 @@ namespace LittleTrawling.UI
             _canvas = UITheme.CreateScreenCanvas("ShopUI_Canvas", 45);
             _canvas.transform.SetParent(transform, false);
 
-            // Modal root
             _modalRoot = new GameObject("ShopModalRoot");
             _modalRoot.transform.SetParent(_canvas.transform, false);
             RectTransform modalRootRt = _modalRoot.AddComponent<RectTransform>();
             UITheme.StretchFill(modalRootRt);
 
-            // Dim overlay
             UITheme.CreateDimOverlay("DimOverlay", _modalRoot.transform);
 
-            // Gold border panel
             Image panelBorder = UITheme.CreatePanel("PanelBorder", _modalRoot.transform,
                 UITheme.PanelSprite, UITheme.Gold);
             UITheme.CenterWithSize(panelBorder.rectTransform, 800f, 640f);
 
-            // Warm white panel fill
             Image panelBg = UITheme.CreatePanel("PanelBg", panelBorder.transform,
                 UITheme.PanelSprite, UITheme.CardWhite);
             UITheme.StretchFill(panelBg.rectTransform, 4f, 4f, 4f, 4f);
 
-            // ── Header ──
             RectTransform headerBar = UITheme.CreateRect("HeaderBar", panelBg.transform);
             headerBar.anchorMin = new Vector2(0, 1);
             headerBar.anchorMax = new Vector2(1, 1);
@@ -230,7 +225,6 @@ namespace LittleTrawling.UI
             headerLabelRt.offsetMin = new Vector2(UITheme.Padding, 0);
             headerLabelRt.offsetMax = new Vector2(-60f, 0);
 
-            // Close button [✕] at top right
             Button closeBtn = UITheme.CreateButton("CloseBtn", headerBar, "✕",
                 UITheme.Gold, UITheme.TextWhite, UITheme.BodyFontSize, 48f, 48f);
             RectTransform closeBtnRt = closeBtn.GetComponent<RectTransform>();
@@ -240,7 +234,6 @@ namespace LittleTrawling.UI
             closeBtnRt.anchoredPosition = new Vector2(-12f, 0);
             closeBtn.onClick.AddListener(CloseShop);
 
-            // Separator
             Image sep = UITheme.CreatePanel("Separator", panelBg.transform, null, UITheme.AccentSkyBlue);
             RectTransform sepRt = sep.rectTransform;
             sepRt.anchorMin = new Vector2(0, 1);
@@ -251,16 +244,14 @@ namespace LittleTrawling.UI
             sepRt.offsetMin = new Vector2(UITheme.Padding, sepRt.offsetMin.y);
             sepRt.offsetMax = new Vector2(-UITheme.Padding, sepRt.offsetMax.y);
 
-            // ── Scroll View ──
             var (scrollRect, content) = UITheme.CreateScrollView("ShopScroll", panelBg.transform, true, 8f);
             RectTransform scrollRt = scrollRect.GetComponent<RectTransform>();
             scrollRt.anchorMin = Vector2.zero;
             scrollRt.anchorMax = Vector2.one;
-            scrollRt.offsetMin = new Vector2(UITheme.Padding, 72f); // Room for bottom gold bar
+            scrollRt.offsetMin = new Vector2(UITheme.Padding, 72f);
             scrollRt.offsetMax = new Vector2(-UITheme.Padding, -62f);
             _contentContainer = content;
 
-            // ── Bottom Gold Balance Display ──
             Image goldBorder = UITheme.CreatePanel("GoldBottomBorder", panelBg.transform,
                 UITheme.BadgeSprite, UITheme.Gold);
             RectTransform goldBorderRt = goldBorder.rectTransform;
@@ -284,28 +275,21 @@ namespace LittleTrawling.UI
             _modalRoot.SetActive(false);
         }
 
-        // ── Dynamic Content Rebuild ────────────────────────────────────
-
         private void RebuildShopContent()
         {
-            // Clear previous content
             for (int i = _contentContainer.childCount - 1; i >= 0; i--)
             {
                 Destroy(_contentContainer.GetChild(i).gameObject);
             }
 
-            // Update gold label
             int currentGold = Wallet.Instance != null ? Wallet.Instance.CurrentGold : 0;
             _goldLabel.text = $"Gold: ${currentGold}";
 
-            // ── Sell Fish Section ──
             BuildSectionHeader("Sell");
             BuildSellFishCard();
 
-            // ── Spacer ──
             BuildSpacer(10f);
 
-            // ── Engines Section ──
             BuildSectionHeader("Engines");
             var boat = BoatController.Instance;
             Engine currentEngine = boat != null ? boat.Engine : null;
@@ -316,10 +300,8 @@ namespace LittleTrawling.UI
                 BuildEngineCard(eng, currentEngine);
             }
 
-            // ── Spacer ──
             BuildSpacer(10f);
 
-            // ── Fishing Rods Section ──
             BuildSectionHeader("Fishing Rods");
             var player = PlayerController.Instance;
             Rod currentRod = player != null ? player.Rod : null;

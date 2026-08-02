@@ -52,6 +52,9 @@ namespace LittleTrawling.UI
         /// <summary>Gold text color (slightly brighter for readability).</summary>
         public static readonly Color TextGold = new Color32(200, 160, 40, 255);
 
+        /// <summary>Pastel red text color for button prompts (e.g. [E], [F]).</summary>
+        public static readonly Color TextPastelRed = new Color32(238, 93, 93, 255);       // #EE5D5D
+
         // ── Layout Constants ───────────────────────────────────────────
 
         public const float Padding = 24f;
@@ -311,17 +314,12 @@ namespace LittleTrawling.UI
         }
 
         /// <summary>
-        /// Creates a ScrollRect with a viewport mask and vertical content container.
-        /// Returns (ScrollRect, contentTransform).
-        /// </summary>
-        /// <summary>
         /// Creates a ScrollRect with a viewport mask, vertical content container, and optional vertical scrollbar.
         /// Returns (ScrollRect, contentTransform).
         /// </summary>
         public static (ScrollRect scrollRect, RectTransform content) CreateScrollView(
             string name, Transform parent, bool addScrollbar = true, float scrollSensitivity = 10f)
         {
-            // Scroll View root
             RectTransform scrollRt = CreateRect(name, parent);
             ScrollRect scrollRect = scrollRt.gameObject.AddComponent<ScrollRect>();
             scrollRect.horizontal = false;
@@ -329,9 +327,8 @@ namespace LittleTrawling.UI
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
             scrollRect.scrollSensitivity = scrollSensitivity;
 
-            // Viewport with mask
             Image viewportImg = CreatePanel(name + "_Viewport", scrollRt, PanelSprite, Color.white);
-            viewportImg.color = new Color(1, 1, 1, 0.01f); // Nearly invisible but needed for mask
+            viewportImg.color = new Color(1, 1, 1, 0.01f);
             RectTransform viewportRt = viewportImg.rectTransform;
             viewportRt.anchorMin = Vector2.zero;
             viewportRt.anchorMax = Vector2.one;
@@ -340,7 +337,6 @@ namespace LittleTrawling.UI
             Mask mask = viewportImg.gameObject.AddComponent<Mask>();
             mask.showMaskGraphic = false;
 
-            // Content container
             RectTransform contentRt = CreateRect(name + "_Content", viewportRt);
             contentRt.anchorMin = new Vector2(0, 1);
             contentRt.anchorMax = new Vector2(1, 1);
@@ -365,7 +361,6 @@ namespace LittleTrawling.UI
 
             if (addScrollbar)
             {
-                // Vertical Scrollbar track
                 Image trackImg = CreatePanel(name + "_Scrollbar", scrollRt, BadgeSprite, new Color32(215, 235, 230, 255));
                 RectTransform trackRt = trackImg.rectTransform;
                 trackRt.anchorMin = new Vector2(1, 0);
@@ -374,11 +369,9 @@ namespace LittleTrawling.UI
                 trackRt.sizeDelta = new Vector2(16f, 0);
                 trackRt.anchoredPosition = Vector2.zero;
 
-                // Sliding Area
                 RectTransform slidingArea = CreateRect("Sliding Area", trackImg.transform);
                 StretchFill(slidingArea, 2f, 2f, 2f, 2f);
 
-                // Handle
                 Image handleImg = CreatePanel("Handle", slidingArea, ButtonSprite, Gold);
                 RectTransform handleRt = handleImg.rectTransform;
                 handleRt.sizeDelta = new Vector2(0, 0);

@@ -87,27 +87,21 @@ namespace LittleTrawling.UI
             _canvas = UITheme.CreateScreenCanvas("InventoryUI_Canvas", 40);
             _canvas.transform.SetParent(transform, false);
 
-            // Modal root (invisible until opened)
             _modalRoot = new GameObject("ModalRoot");
             _modalRoot.transform.SetParent(_canvas.transform, false);
             RectTransform modalRootRt = _modalRoot.AddComponent<RectTransform>();
             UITheme.StretchFill(modalRootRt);
 
-            // Dim overlay
             UITheme.CreateDimOverlay("DimOverlay", _modalRoot.transform);
 
-            // ── Modal Panel ──
-            // Gold border
             Image panelBorder = UITheme.CreatePanel("PanelBorder", _modalRoot.transform,
                 UITheme.PanelSprite, UITheme.Gold);
             UITheme.CenterWithSize(panelBorder.rectTransform, 800f, 660f);
 
-            // Warm white fill
             Image panelBg = UITheme.CreatePanel("PanelBg", panelBorder.transform,
                 UITheme.PanelSprite, UITheme.CardWhite);
             UITheme.StretchFill(panelBg.rectTransform, 4f, 4f, 4f, 4f);
 
-            // ── Header Bar ──
             RectTransform headerBar = UITheme.CreateRect("HeaderBar", panelBg.transform);
             headerBar.anchorMin = new Vector2(0, 1);
             headerBar.anchorMax = new Vector2(1, 1);
@@ -123,7 +117,6 @@ namespace LittleTrawling.UI
             headerLabelRt.offsetMin = new Vector2(UITheme.Padding, 0);
             headerLabelRt.offsetMax = new Vector2(-60f, 0);
 
-            // Close button [✕]
             Button closeBtn = UITheme.CreateButton("CloseBtn", headerBar, "✕",
                 UITheme.Gold, UITheme.TextWhite, UITheme.BodyFontSize, 48f, 48f);
             RectTransform closeBtnRt = closeBtn.GetComponent<RectTransform>();
@@ -137,7 +130,6 @@ namespace LittleTrawling.UI
                 _modalRoot.SetActive(false);
             });
 
-            // ── Separator ──
             Image sep = UITheme.CreatePanel("Separator", panelBg.transform, null, UITheme.AccentSkyBlue);
             RectTransform sepRt = sep.rectTransform;
             sepRt.anchorMin = new Vector2(0, 1);
@@ -148,7 +140,6 @@ namespace LittleTrawling.UI
             sepRt.offsetMin = new Vector2(UITheme.Padding, sepRt.offsetMin.y);
             sepRt.offsetMax = new Vector2(-UITheme.Padding, sepRt.offsetMax.y);
 
-            // ── Scroll View ──
             var (scrollRect, content) = UITheme.CreateScrollView("FishScroll", panelBg.transform);
             RectTransform scrollRt = scrollRect.GetComponent<RectTransform>();
             scrollRt.anchorMin = Vector2.zero;
@@ -157,7 +148,6 @@ namespace LittleTrawling.UI
             scrollRt.offsetMax = new Vector2(-UITheme.Padding, -62f);
             _contentContainer = content;
 
-            // ── Empty State ──
             _emptyState = new GameObject("EmptyState");
             _emptyState.transform.SetParent(panelBg.transform, false);
             RectTransform emptyRt = _emptyState.AddComponent<RectTransform>();
@@ -173,7 +163,7 @@ namespace LittleTrawling.UI
             emptyTitleRt.offsetMax = Vector2.zero;
 
             TextMeshProUGUI emptySub = UITheme.CreateLabel("EmptySub", _emptyState.transform,
-                "Hold and release <b>[F]</b> near ocean water to catch fish.",
+                "Hold and release <color=#EE5D5D><b>[F]</b></color> near ocean water to catch fish.",
                 UITheme.SmallFontSize, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.Center);
             emptySub.textWrappingMode = TextWrappingModes.Normal;
             emptySub.richText = true;
@@ -187,11 +177,8 @@ namespace LittleTrawling.UI
             _modalRoot.SetActive(false);
         }
 
-        // ── Card List Rebuild ──────────────────────────────────────────
-
         private void RebuildCardList()
         {
-            // Clear existing cards
             for (int i = _contentContainer.childCount - 1; i >= 0; i--)
             {
                 Destroy(_contentContainer.GetChild(i).gameObject);
@@ -202,7 +189,6 @@ namespace LittleTrawling.UI
             int itemCount = items != null ? items.Count : 0;
             int totalValue = mgr != null ? mgr.CalculateTotalValue() : 0;
 
-            // Update header
             if (itemCount == 0)
             {
                 _headerLabel.text = "FISH INVENTORY";
@@ -224,7 +210,6 @@ namespace LittleTrawling.UI
 
         private void BuildFishCard(CaughtFish item)
         {
-            // Card border (subtle sky blue)
             Image cardBorder = UITheme.CreatePanel("FishCard", _contentContainer,
                 UITheme.CardSprite, UITheme.AccentSkyBlue);
             RectTransform cardBorderRt = cardBorder.rectTransform;
@@ -232,12 +217,10 @@ namespace LittleTrawling.UI
             le.preferredHeight = UITheme.CardHeight;
             le.flexibleWidth = 1f;
 
-            // Card background (warm white)
             Image cardBg = UITheme.CreatePanel("CardBg", cardBorder.transform,
                 UITheme.CardSprite, UITheme.CardWhite);
             UITheme.StretchFill(cardBg.rectTransform, 2f, 2f, 2f, 2f);
 
-            // ── Fish Sprite Thumbnail ──
             Image spriteFrame = UITheme.CreatePanel("SpriteFrame", cardBg.transform,
                 UITheme.CardSprite, UITheme.BackgroundMint);
             RectTransform spriteFrameRt = spriteFrame.rectTransform;
@@ -262,11 +245,9 @@ namespace LittleTrawling.UI
                 UITheme.StretchFill(noSprite.rectTransform);
             }
 
-            // ── Info Column ──
             float textLeft = 136f;
-            float textWidth = -260f; // negative = offset from right
+            float textWidth = -260f;
 
-            // Name + Rarity
             string fishName = item.species != null ? item.species.displayName : "Unknown Fish";
             FishRarity rarity = item.species != null ? item.species.rarity : FishRarity.Common;
             string rarityHex = GetRarityColorHex(rarity);
@@ -282,7 +263,6 @@ namespace LittleTrawling.UI
             nameLabelRt.offsetMin = new Vector2(textLeft, 0);
             nameLabelRt.offsetMax = new Vector2(textWidth, -6f);
 
-            // Description
             string desc = item.species != null ? item.species.description : "No description available.";
             TextMeshProUGUI descLabel = UITheme.CreateLabel("DescLabel", cardBg.transform,
                 $"<i>\"{desc}\"</i>",
@@ -296,7 +276,6 @@ namespace LittleTrawling.UI
             descLabelRt.offsetMin = new Vector2(textLeft, 0);
             descLabelRt.offsetMax = new Vector2(textWidth, 0);
 
-            // Stats
             TextMeshProUGUI statsLabel = UITheme.CreateLabel("StatsLabel", cardBg.transform,
                 $"Size: <b>{item.sizeCm:F1} cm</b>  |  Weight: <b>{item.weightKg:F2} kg</b>",
                 UITheme.SmallFontSize, UITheme.AccentSkyBlue, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
@@ -309,7 +288,6 @@ namespace LittleTrawling.UI
             statsLabelRt.offsetMin = new Vector2(textLeft, 6f);
             statsLabelRt.offsetMax = new Vector2(textWidth, 0);
 
-            // ── Price Badge (right side) ──
             Image priceBadge = UITheme.CreatePanel("PriceBadge", cardBg.transform,
                 UITheme.BadgeSprite, UITheme.Gold);
             RectTransform priceRt = priceBadge.rectTransform;

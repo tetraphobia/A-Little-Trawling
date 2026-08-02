@@ -30,7 +30,7 @@ namespace LittleTrawling.Entities
 
         public string GetInteractionPrompt()
         {
-            return "Press <color=yellow><b>[E]</b></color> to talk to Shopkeeper";
+            return "Press <color=#EE5D5D><b>[E]</b></color> to talk to Shopkeeper";
         }
 
         public void Interact()

@@ -15,7 +15,6 @@ namespace LittleTrawling.UI
 
         private Canvas _canvas;
 
-        // Charging state
         private GameObject _chargingRoot;
         private Image _chargeBarFill;
         private TextMeshProUGUI _chargingLabel;
@@ -50,18 +49,15 @@ namespace LittleTrawling.UI
 
         private void BuildChargingUI()
         {
-            // Outer border (gold)
             Image border = UITheme.CreatePanel("ChargingBorder", _canvas.transform,
                 UITheme.ProgressTrackSprite, UITheme.Gold);
             UITheme.AnchorBottomCenter(border.rectTransform, 420f, 60f, 90f);
             _chargingRoot = border.gameObject;
 
-            // Track background (warm white)
             Image track = UITheme.CreatePanel("ChargingTrack", border.transform,
                 UITheme.ProgressTrackSprite, UITheme.CardWhite);
             UITheme.StretchFill(track.rectTransform, 3f, 3f, 3f, 3f);
 
-            // Fill bar (leaf green)
             _chargeBarFill = UITheme.CreatePanel("ChargingFill", track.transform,
                 UITheme.ProgressFillSprite, UITheme.LeafGreen);
             RectTransform fillRt = _chargeBarFill.rectTransform;
@@ -70,7 +66,6 @@ namespace LittleTrawling.UI
             fillRt.offsetMin = new Vector2(3, 3);
             fillRt.offsetMax = new Vector2(0, -3);
 
-            // Label overlay
             _chargingLabel = UITheme.CreateLabel("ChargingLabel", track.transform, "Casting... 0%",
                 UITheme.BodyFontSize, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.Center);
             UITheme.StretchFill(_chargingLabel.rectTransform);
@@ -98,7 +93,6 @@ namespace LittleTrawling.UI
         {
             float ratio = FishingManager.Instance.ChargeRatio;
 
-            // Update fill width via anchor
             RectTransform fillRt = _chargeBarFill.rectTransform;
             fillRt.anchorMax = new Vector2(ratio, 1);
 

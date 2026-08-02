@@ -73,7 +73,6 @@ namespace LittleTrawling.UI
             _canvas = UITheme.CreateScreenCanvas("PlayerHUD_Canvas", 50);
             _canvas.transform.SetParent(transform, false);
 
-            // HUD pill container
             Image pillBorder = UITheme.CreatePanel("HUD_Border", _canvas.transform,
                 UITheme.BadgeSprite, UITheme.Gold);
             UITheme.AnchorTopRight(pillBorder.rectTransform, 340f, 62f, 28f, 24f);
@@ -84,7 +83,6 @@ namespace LittleTrawling.UI
 
             _hudRoot = pillBorder.gameObject;
 
-            // ── Gold Section (left half) ──
             RectTransform goldSection = UITheme.CreateRect("GoldSection", pillBg.transform);
             goldSection.anchorMin = new Vector2(0, 0);
             goldSection.anchorMax = new Vector2(0.48f, 1);
@@ -95,7 +93,6 @@ namespace LittleTrawling.UI
                 UITheme.BodyFontSize, UITheme.TextGold, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
             UITheme.StretchFill(_goldLabel.rectTransform);
 
-            // ── Divider ──
             Image divider = UITheme.CreatePanel("Divider", pillBg.transform, null, UITheme.AccentSkyBlue);
             RectTransform divRt = divider.rectTransform;
             divRt.anchorMin = new Vector2(0.5f, 0.15f);
@@ -103,14 +100,12 @@ namespace LittleTrawling.UI
             divRt.sizeDelta = new Vector2(2, 0);
             divRt.anchoredPosition = Vector2.zero;
 
-            // ── Fish Section (right half) ──
             RectTransform fishSection = UITheme.CreateRect("FishSection", pillBg.transform);
             fishSection.anchorMin = new Vector2(0.52f, 0);
             fishSection.anchorMax = new Vector2(1, 1);
             fishSection.offsetMin = new Vector2(0, 0);
             fishSection.offsetMax = new Vector2(-14, 0);
 
-            // Fish icon placeholder
             Image fishIcon = UITheme.CreatePanel("FishIcon", fishSection, null, Color.white);
             _fishIconImage = fishIcon;
             RectTransform iconRt = fishIcon.rectTransform;
@@ -127,7 +122,6 @@ namespace LittleTrawling.UI
             }
             else
             {
-                // Hide the image placeholder when no sprite is assigned
                 fishIcon.enabled = false;
             }
 
@@ -137,7 +131,6 @@ namespace LittleTrawling.UI
             fishLabelRt.anchorMin = new Vector2(0, 0);
             fishLabelRt.anchorMax = new Vector2(1, 1);
 
-            // Offset label to the right of the icon if it's visible
             if (fishIconSprite != null)
             {
                 fishLabelRt.offsetMin = new Vector2(36, 0);

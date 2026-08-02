@@ -107,12 +107,10 @@ namespace LittleTrawling.Systems
 
             if (!_isLineFullyTyped)
             {
-                // Instant skip to full line text
                 CompleteCurrentLineInstantly();
             }
             else
             {
-                // Advance to next line or complete dialogue
                 AdvanceToNextLine();
             }
         }
@@ -220,10 +218,9 @@ namespace LittleTrawling.Systems
         private void InitAudio()
         {
             _audioSource = gameObject.AddComponent<AudioSource>();
-            _audioSource.spatialBlend = 0f; // 2D Sound
+            _audioSource.spatialBlend = 0f;
             _audioSource.volume = 0.35f;
 
-            // Generate 3 short pitch variations of Animal Crossing speech blip
             _blipClips = new AudioClip[3];
             _blipClips[0] = GenerateBlipClip(520f);
             _blipClips[1] = GenerateBlipClip(640f);
@@ -243,7 +240,7 @@ namespace LittleTrawling.Systems
         private static AudioClip GenerateBlipClip(float frequency)
         {
             int sampleRate = 44100;
-            float duration = 0.035f; // 35ms cute blip
+            float duration = 0.035f;
             int sampleCount = Mathf.RoundToInt(sampleRate * duration);
 
             float[] samples = new float[sampleCount];
