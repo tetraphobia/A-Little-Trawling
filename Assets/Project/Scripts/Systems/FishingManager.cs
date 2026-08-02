@@ -546,6 +546,7 @@ namespace LittleTrawling.Systems
 
         private void ExecuteMinigameSuccess()
         {
+            Vector3 bobberPos = _bobberTargetPosition;
             DestroyBobber();
             CurrentState = FishingState.Idle;
 
@@ -561,6 +562,58 @@ namespace LittleTrawling.Systems
 
             int goldEarned = Mathf.RoundToInt(species.baseValue * (size / Mathf.Max(0.01f, species.minSize)));
 
+            StartCoroutine(AnimateFishCatchArc(species, bobberPos, sizeCm, weight, goldEarned));
+        }
+
+        private System.Collections.IEnumerator AnimateFishCatchArc(Fish species, Vector3 startPos, float sizeCm, float weight, int goldEarned)
+        {
+            Vector3 origin = CalculateCastOrigin(out _);
+            Vector3 targetPos = origin + Vector3.up * 1.2f;
+
+            GameObject flyingFish = new GameObject($"FlyingFish_{species.displayName}");
+            flyingFish.transform.position = startPos;
+
+            SpriteRenderer sr = flyingFish.AddComponent<SpriteRenderer>();
+            if (species != null && species.sprite != null)
+            {
+                sr.sprite = species.sprite;
+            }
+            else
+            {
+                sr.sprite = CreateFallbackFishSprite();
+            }
+
+            float scaleMultiplier = Mathf.Clamp(sizeCm / 50f, 0.4f, 1.2f);
+            flyingFish.transform.localScale = Vector3.one * scaleMultiplier;
+
+            float duration = 0.75f;
+            float elapsed = 0f;
+            float distance = Vector3.Distance(startPos, targetPos);
+            float maxArcHeight = Mathf.Clamp(distance * 0.45f, 2.0f, 5.0f);
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                Vector3 currentPos = Vector3.Lerp(startPos, targetPos, t);
+                float arcY = Mathf.Sin(t * Mathf.PI) * maxArcHeight;
+                currentPos.y += arcY;
+
+                flyingFish.transform.position = currentPos;
+
+                if (Camera.main != null)
+                {
+                    float wiggleZ = Mathf.Sin(t * 24f) * 18f;
+                    flyingFish.transform.rotation = Quaternion.LookRotation(-Camera.main.transform.forward, Camera.main.transform.up)
+                                                  * Quaternion.Euler(0f, 0f, wiggleZ);
+                }
+
+                yield return null;
+            }
+
+            Destroy(flyingFish);
+
             if (Wallet.Instance != null)
             {
                 Wallet.Instance.AddGold(goldEarned);
@@ -574,6 +627,44 @@ namespace LittleTrawling.Systems
             {
                 gm.SetState(GameState.Walking);
             }
+        }
+
+        private static Sprite _fallbackSprite;
+
+        private Sprite CreateFallbackFishSprite()
+        {
+            if (_fallbackSprite != null) return _fallbackSprite;
+
+            int width = 64;
+            int height = 32;
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            Color transparent = new Color(0, 0, 0, 0);
+            Color bodyColor = new Color(0.95f, 0.5f, 0.15f, 1.0f);
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    float nx = (float)x / width;
+                    float ny = (float)y / height - 0.5f;
+
+                    bool inBody = (Mathf.Pow(nx - 0.45f, 2) / 0.12f + Mathf.Pow(ny, 2) / 0.12f) <= 1.0f;
+                    bool inTail = nx > 0.75f && Mathf.Abs(ny) <= (nx - 0.75f) * 1.5f;
+
+                    if (inBody || inTail)
+                    {
+                        tex.SetPixel(x, y, bodyColor);
+                    }
+                    else
+                    {
+                        tex.SetPixel(x, y, transparent);
+                    }
+                }
+            }
+
+            tex.Apply();
+            _fallbackSprite = Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), 100f);
+            return _fallbackSprite;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

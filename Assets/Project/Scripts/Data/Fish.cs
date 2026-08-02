@@ -18,6 +18,13 @@ namespace LittleTrawling.Data
         [Header("Name")]
         public string displayName = "New Fish";
 
+        [Header("Description")]
+        public string description = "New Fish description";
+
+        [Header("Sprite")]
+        [Tooltip("2D sprite for the fish.")]
+        public Sprite sprite;
+
         [Header("Rarity")]
         public FishRarity rarity = FishRarity.Common;
 
