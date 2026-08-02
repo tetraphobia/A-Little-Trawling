@@ -33,7 +33,6 @@ namespace LittleTrawling.Vehicles
             _basePos = transform.localPosition;
             _baseRot = transform.localRotation;
             _boatController = GetComponentInParent<BoatController>() ?? GetComponent<BoatController>();
-            Debug.Log($"[BoatBob] Awake: _basePos={_basePos}, _boatController={(_boatController != null ? _boatController.name : "NULL")}");
         }
 
         private void LateUpdate()
@@ -44,7 +43,6 @@ namespace LittleTrawling.Vehicles
             if (afloat != _lastAfloatState)
             {
                 _lastAfloatState = afloat;
-                Debug.Log($"[BoatBob] Afloat state changed: afloat={afloat}");
             }
 
             _amplitude = Mathf.MoveTowards(_amplitude, afloat ? 1f : 0f, settleSpeed * Time.deltaTime);
@@ -63,12 +61,6 @@ namespace LittleTrawling.Vehicles
 
             transform.localPosition = _basePos + Vector3.up * bob;
             transform.localRotation = _baseRot * Quaternion.Euler(pitch, 0f, roll);
-
-            // Log periodic motion output every ~2 seconds for debugging
-            if (Time.frameCount % 120 == 0)
-            {
-                Debug.Log($"[BoatBob] Active: amplitude={_amplitude:F2}, bob={bob:F3}m, pitch={pitch:F1}°, roll={roll:F1}°");
-            }
         }
     }
 }

@@ -54,6 +54,12 @@ namespace LittleTrawling.Core
             _currentDistance = _targetDistance;
             _currentOffset = _targetOffset;
 
+            var cam = GetComponent<Camera>() ?? Camera.main;
+            if (cam != null && cam.farClipPlane < 500f)
+            {
+                cam.farClipPlane = 500f;
+            }
+
             // Initialize yaw behind the target.
             if (_activeTarget != null)
             {

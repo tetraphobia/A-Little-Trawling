@@ -3,6 +3,7 @@ using UnityEngine;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Entities;
+using LittleTrawling.Environment;
 using LittleTrawling.Vehicles;
 
 namespace LittleTrawling.Systems
@@ -26,8 +27,8 @@ namespace LittleTrawling.Systems
         [SerializeField] private List<Fish> fishPool = new List<Fish>();
 
         [Header("Cast Settings")]
-        [SerializeField] private float minCastDistance = 4.0f;
-        [SerializeField] private float maxCastDistance = 20.0f;
+        [SerializeField] private float minCastDistance = 1.5f;
+        [SerializeField] private float maxCastDistance = 7.0f;
         [SerializeField] private float maxChargeTime = 1.5f;
 
         [Header("Bite Settings")]
@@ -53,6 +54,10 @@ namespace LittleTrawling.Systems
 
         private GameObject _bobberObject;
         private Vector3 _bobberTargetPosition;
+
+        private GameObject _previewBobberObject;
+        private MeshRenderer _previewBodyRenderer;
+        private MeshRenderer _previewRippleRenderer;
 
         private void Awake()
         {
@@ -83,6 +88,7 @@ namespace LittleTrawling.Systems
                 InputReader.Instance.FishReleased -= OnFishReleased;
             }
 
+            DestroyPreviewBobber();
             DestroyBobber();
             if (Instance == this) Instance = null;
         }
@@ -93,6 +99,7 @@ namespace LittleTrawling.Systems
             {
                 case FishingState.Charging:
                     _chargeTimer += Time.deltaTime;
+                    UpdatePreviewBobber();
                     break;
 
                 case FishingState.WaitingForBite:
@@ -125,7 +132,14 @@ namespace LittleTrawling.Systems
                     {
                         CurrentState = FishingState.Charging;
                         _chargeTimer = 0f;
+                        UpdatePreviewBobber();
                     }
+                    break;
+
+                case FishingState.Charging:
+                    // Pressing again while charging cancels cast
+                    DestroyPreviewBobber();
+                    CurrentState = FishingState.Idle;
                     break;
 
                 case FishingState.WaitingForBite:
@@ -152,6 +166,15 @@ namespace LittleTrawling.Systems
             _bobberTargetPosition = origin + forwardDir * distance;
             _bobberTargetPosition.y = 0.05f;
 
+            DestroyPreviewBobber();
+
+            // Instantly end fishing minigame if the bobber does not land in water!
+            if (!IsPositionOnWater(_bobberTargetPosition))
+            {
+                OnMissedWaterLanding();
+                return;
+            }
+
             SpawnBobber(_bobberTargetPosition);
 
             var gm = GameManager.Instance;
@@ -165,6 +188,150 @@ namespace LittleTrawling.Systems
             ScheduleNextBiteCheck();
 
             OnFishingStarted?.Invoke();
+        }
+
+        private void OnMissedWaterLanding()
+        {
+            DestroyBobber();
+            CurrentState = FishingState.Idle;
+
+            OnFishingFailed?.Invoke();
+
+            var gm = GameManager.Instance;
+            if (gm != null)
+            {
+                gm.SetState(GameState.Walking);
+            }
+        }
+
+        public bool IsPositionOnWater(Vector3 pos)
+        {
+            float waterY = OceanController.Instance != null ? OceanController.Instance.CurrentWaterHeight : 0f;
+
+            Vector3 rayOrigin = new Vector3(pos.x, waterY + 50f, pos.z);
+            RaycastHit[] hits = Physics.RaycastAll(rayOrigin, Vector3.down, 100f);
+
+            bool isRejected = false;
+            string rejectReason = "";
+
+            foreach (var hit in hits)
+            {
+                if (hit.collider == null || hit.collider.isTrigger) continue;
+
+                // Ignore player, boat, and bobbers
+                if (hit.collider.CompareTag("Player")) continue;
+                if (hit.collider.GetComponentInParent<BoatController>() != null) continue;
+                if (hit.collider.GetComponentInParent<PlayerController>() != null) continue;
+
+                string colName = hit.collider.name.ToLower();
+                if (colName.Contains("ocean") || colName.Contains("water") || colName.Contains("bobber")) continue;
+
+                // Land or Dock is any surface elevated above ocean water level (y > waterY + 0.15f) or attached to a Dock
+                if (hit.point.y > waterY + 0.15f || hit.collider.GetComponentInParent<Dock>() != null)
+                {
+                    isRejected = true;
+                    rejectReason = $"Hit elevated land/dock surface '{hit.collider.name}' at y={hit.point.y:F2} (waterY+0.15={waterY + 0.15f:F2})";
+                    break;
+                }
+            }
+
+            if (isRejected)
+            {
+                Debug.Log($"[WaterCheck RED] pos=({pos.x:F1}, {pos.z:F1}) -> REJECTED: {rejectReason}");
+            }
+
+            return !isRejected;
+        }
+
+        private void UpdatePreviewBobber()
+        {
+            float ratio = ChargeRatio;
+            float distance = Mathf.Lerp(minCastDistance, maxCastDistance, ratio);
+            Vector3 origin = CalculateCastOrigin(out Vector3 forwardDir);
+            Vector3 previewPos = origin + forwardDir * distance;
+            previewPos.y = 0.05f;
+
+            bool isWater = IsPositionOnWater(previewPos);
+
+            if (_previewBobberObject == null)
+            {
+                SpawnPreviewBobber(previewPos, isWater);
+            }
+            else
+            {
+                _previewBobberObject.transform.position = previewPos;
+                UpdatePreviewBobberColor(isWater);
+            }
+        }
+
+        private void SpawnPreviewBobber(Vector3 position, bool isWater)
+        {
+            DestroyPreviewBobber();
+
+            _previewBobberObject = new GameObject("PreviewFishingBobber");
+            _previewBobberObject.transform.position = position;
+
+            Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Legacy Shaders/Diffuse");
+
+            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.name = "PreviewBobberBody";
+            sphere.transform.SetParent(_previewBobberObject.transform, false);
+            sphere.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+            sphere.transform.localPosition = new Vector3(0f, 0.2f, 0f);
+
+            var col1 = sphere.GetComponent<Collider>();
+            if (col1 != null) Destroy(col1);
+
+            _previewBodyRenderer = sphere.GetComponent<MeshRenderer>();
+            if (_previewBodyRenderer != null && shader != null)
+            {
+                _previewBodyRenderer.material = new Material(shader);
+            }
+
+            var ripple = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            ripple.name = "PreviewBobberRipple";
+            ripple.transform.SetParent(_previewBobberObject.transform, false);
+            ripple.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+            ripple.transform.localScale = new Vector3(1.4f, 0.005f, 1.4f);
+
+            var col2 = ripple.GetComponent<Collider>();
+            if (col2 != null) Destroy(col2);
+
+            _previewRippleRenderer = ripple.GetComponent<MeshRenderer>();
+            if (_previewRippleRenderer != null && shader != null)
+            {
+                _previewRippleRenderer.material = new Material(shader);
+            }
+
+            UpdatePreviewBobberColor(isWater);
+        }
+
+        private void UpdatePreviewBobberColor(bool isWater)
+        {
+            Color bodyColor = isWater
+                ? new Color(0.1f, 0.95f, 0.35f, 0.55f)
+                : new Color(0.95f, 0.15f, 0.15f, 0.55f);
+
+            Color rippleColor = isWater
+                ? new Color(0.1f, 0.95f, 0.35f, 0.35f)
+                : new Color(0.95f, 0.15f, 0.15f, 0.35f);
+
+            if (_previewBodyRenderer != null && _previewBodyRenderer.material != null)
+                _previewBodyRenderer.material.color = bodyColor;
+
+            if (_previewRippleRenderer != null && _previewRippleRenderer.material != null)
+                _previewRippleRenderer.material.color = rippleColor;
+        }
+
+        private void DestroyPreviewBobber()
+        {
+            if (_previewBobberObject != null)
+            {
+                Destroy(_previewBobberObject);
+                _previewBobberObject = null;
+                _previewBodyRenderer = null;
+                _previewRippleRenderer = null;
+            }
         }
 
         private void ScheduleNextBiteCheck()

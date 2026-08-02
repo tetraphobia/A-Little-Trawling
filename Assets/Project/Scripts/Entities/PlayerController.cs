@@ -118,12 +118,10 @@ namespace LittleTrawling.Entities
             if (!_active) return;
 
             bool isGrounded = _cc.isGrounded || _isGroundedOnDeck;
-            Debug.Log($"[JUMP] OnJumpPressed: cc.isGrounded={_cc.isGrounded}, _isGroundedOnDeck={_isGroundedOnDeck}, _verticalVel={_verticalVel:F3}, pos.y={transform.position.y:F3}");
             if (isGrounded)
             {
                 _verticalVel = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
                 _isGroundedOnDeck = false;
-                Debug.Log($"[JUMP] Jumped! _verticalVel set to {_verticalVel:F3}");
 
                 if (animator != null)
                 {

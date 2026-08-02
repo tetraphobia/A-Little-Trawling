@@ -47,9 +47,9 @@ namespace LittleTrawling.UI
 
         private void ShowCatchPopup(Fish species, float sizeCm, float weightKg, int goldEarned)
         {
-            _titleText = $"<size=20><b>🎣 CAUGHT A {species.displayName.ToUpper()}!</b></size>";
+            _titleText = $"<size=20><b>Caught a {species.displayName.ToUpper()}!</b></size>";
             _statsText = $"<size=15>Length: <b>{sizeCm:F1} cm</b> | Weight: <b>{weightKg:F2} kg</b></size>";
-            _goldText = $"<size=18><b>💰 +${goldEarned} Gold</b></size>";
+            _goldText = $"<size=18><b>Earned ${goldEarned} Gold</b></size>";
             _popupTimer = PopupDuration;
             _showPopup = true;
         }

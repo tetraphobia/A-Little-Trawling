@@ -45,10 +45,10 @@ namespace LittleTrawling.Environment
         [Header("Fog Integration")]
         [Tooltip("Enable dynamic fog synchronized with day/night cycle.")]
         [SerializeField] private bool syncFog = true;
-        [SerializeField] private FogMode fogMode = FogMode.ExponentialSquared;
-        [SerializeField] private float fogDensity = 0.012f;
-        [SerializeField] private float fogStartDistance = 15.0f;
-        [SerializeField] private float fogEndDistance = 220.0f;
+        [SerializeField] private FogMode fogMode = FogMode.Linear;
+        [SerializeField] private float fogDensity = 0.0025f;
+        [SerializeField] private float fogStartDistance = 50.0f;
+        [SerializeField] private float fogEndDistance = 350.0f;
         [SerializeField] private Color dayFogColor = new Color(0.55f, 0.65f, 0.75f);
         [SerializeField] private Color sunsetFogColor = new Color(0.85f, 0.5f, 0.3f);
         [SerializeField] private Color nightFogColor = new Color(0.04f, 0.06f, 0.12f);
