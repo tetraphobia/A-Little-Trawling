@@ -45,6 +45,28 @@ namespace LittleTrawling.Core
         private float _targetDistance;
         private Vector3 _targetOffset;
 
+        public static ThirdPersonCameraController Instance { get; private set; }
+
+        private bool _isCelebrationOverride;
+        private float _celebrationYaw;
+        private float _celebrationPitch;
+        private float _celebrationDistance;
+        private Vector3 _celebrationOffset;
+
+        private float _savedYaw;
+        private float _savedPitch;
+        private bool _isRestoringFromCelebration;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
+
         private void Start()
         {
             // Default to walking profile.
@@ -78,6 +100,31 @@ namespace LittleTrawling.Core
         {
             if (GameManager.Instance != null)
                 GameManager.Instance.StateChanged -= OnStateChanged;
+            if (Instance == this) Instance = null;
+        }
+
+        public void SetCelebrationOverride(bool enabled, float yaw = 0f, float pitch = 5f, float distance = 3.8f, Vector3? offset = null)
+        {
+            if (enabled)
+            {
+                if (!_isCelebrationOverride)
+                {
+                    _savedYaw = _yaw;
+                    _savedPitch = _pitch;
+                }
+                _isCelebrationOverride = true;
+                _isRestoringFromCelebration = false;
+                _celebrationYaw = yaw;
+                _celebrationPitch = pitch;
+                _celebrationDistance = distance;
+                _celebrationOffset = offset ?? new Vector3(0f, 1.2f, 0f);
+            }
+            else
+            {
+                _isCelebrationOverride = false;
+                _isRestoringFromCelebration = true;
+                OnStateChanged(GameManager.Instance != null ? GameManager.Instance.CurrentState : GameState.Walking);
+            }
         }
 
         private void OnStateChanged(GameState state)
@@ -88,6 +135,12 @@ namespace LittleTrawling.Core
                     _activeTarget = boatTarget;
                     _targetDistance = pilotingDistance;
                     _targetOffset = pilotingOffset;
+                    break;
+
+                case GameState.Dialogue:
+                    _activeTarget = playerTarget;
+                    _targetDistance = 4.2f;
+                    _targetOffset = walkingOffset;
                     break;
 
                 default:
@@ -102,26 +155,48 @@ namespace LittleTrawling.Core
         {
             if (_activeTarget == null || InputReader.Instance == null) return;
 
-            // Orbit while right click is held
-            if (InputReader.Instance.CameraLookHeld)
+            if (_isCelebrationOverride)
             {
-                Vector2 look = InputReader.Instance.LookInput;
-                _yaw += look.x * mouseSensitivity;
-                _pitch -= look.y * mouseSensitivity;
-                _pitch = Mathf.Clamp(_pitch, minPitch, maxPitch);
-
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
+                _yaw = Mathf.LerpAngle(_yaw, _celebrationYaw, 8f * Time.deltaTime);
+                _pitch = Mathf.Lerp(_pitch, _celebrationPitch, 8f * Time.deltaTime);
+                _currentDistance = Mathf.Lerp(_currentDistance, _celebrationDistance, 8f * Time.deltaTime);
+                _currentOffset = Vector3.Lerp(_currentOffset, _celebrationOffset, 8f * Time.deltaTime);
             }
             else
             {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
+                if (_isRestoringFromCelebration)
+                {
+                    _yaw = Mathf.LerpAngle(_yaw, _savedYaw, 6f * Time.deltaTime);
+                    _pitch = Mathf.Lerp(_pitch, _savedPitch, 6f * Time.deltaTime);
 
-            // Transition between state profiles
-            _currentDistance = Mathf.Lerp(_currentDistance, _targetDistance, transitionSpeed * Time.deltaTime);
-            _currentOffset = Vector3.Lerp(_currentOffset, _targetOffset, transitionSpeed * Time.deltaTime);
+                    if (Mathf.Abs(Mathf.DeltaAngle(_yaw, _savedYaw)) < 0.5f && Mathf.Abs(_pitch - _savedPitch) < 0.5f)
+                    {
+                        _isRestoringFromCelebration = false;
+                    }
+                }
+
+                // Orbit while right click is held
+                if (InputReader.Instance.CameraLookHeld)
+                {
+                    Vector2 look = InputReader.Instance.LookInput;
+                    _yaw += look.x * mouseSensitivity;
+                    _pitch -= look.y * mouseSensitivity;
+                    _pitch = Mathf.Clamp(_pitch, minPitch, maxPitch);
+                    _isRestoringFromCelebration = false;
+
+                    Cursor.lockState = CursorLockMode.Locked;
+                    Cursor.visible = false;
+                }
+                else
+                {
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                }
+
+                // Transition between state profiles
+                _currentDistance = Mathf.Lerp(_currentDistance, _targetDistance, transitionSpeed * Time.deltaTime);
+                _currentOffset = Vector3.Lerp(_currentOffset, _targetOffset, transitionSpeed * Time.deltaTime);
+            }
 
             // Compute desired position
             Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);

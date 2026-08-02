@@ -106,9 +106,10 @@ namespace LittleTrawling.UI
             var gm = GameManager.Instance;
             if (gm == null) return;
 
+            bool isShowingChoices = DialogueChoiceUI.Instance != null && DialogueChoiceUI.Instance.IsShowingChoices;
             bool shouldShow = gm.IsState(GameState.Dialogue);
             var mgr = DialogueManager.Instance;
-            if (mgr == null || !mgr.IsActive) shouldShow = false;
+            if ((mgr == null || !mgr.IsActive) && !isShowingChoices) shouldShow = false;
 
             if (shouldShow != _isShowing)
             {
@@ -118,20 +119,25 @@ namespace LittleTrawling.UI
 
             if (!_isShowing) return;
 
-            var session = mgr.CurrentSession;
-            if (session == null) return;
+            if (mgr != null && mgr.CurrentSession != null)
+            {
+                var session = mgr.CurrentSession;
+                _badgeLabel.text = session.speakerName;
+                _badgeImage.color = session.speakerColor;
 
-            _badgeLabel.text = session.speakerName;
-            _badgeImage.color = session.speakerColor;
+                float textWidth = _badgeLabel.preferredWidth + 32f;
+                float badgeWidth = Mathf.Max(120f, textWidth);
+                RectTransform badgeBorderRt = _badgeImage.transform.parent.GetComponent<RectTransform>();
+                badgeBorderRt.sizeDelta = new Vector2(badgeWidth, 38f);
 
-            float textWidth = _badgeLabel.preferredWidth + 32f;
-            float badgeWidth = Mathf.Max(120f, textWidth);
-            RectTransform badgeBorderRt = _badgeImage.transform.parent.GetComponent<RectTransform>();
-            badgeBorderRt.sizeDelta = new Vector2(badgeWidth, 38f);
+                _bodyText.text = mgr.DisplayedText;
+            }
 
-            _bodyText.text = mgr.DisplayedText;
-
-            if (mgr.IsLineFullyTyped)
+            if (isShowingChoices)
+            {
+                if (_promptText.gameObject.activeSelf) _promptText.gameObject.SetActive(false);
+            }
+            else if (mgr != null && mgr.IsLineFullyTyped)
             {
                 if (!_promptText.gameObject.activeSelf) _promptText.gameObject.SetActive(true);
 

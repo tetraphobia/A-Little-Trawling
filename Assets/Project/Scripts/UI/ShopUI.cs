@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using LittleTrawling.Audio;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Entities;
@@ -25,6 +26,10 @@ namespace LittleTrawling.UI
         [SerializeField] private List<Rod> availableRods = new List<Rod>();
 
         [Header("Audio SFX")]
+        [Tooltip("Sound played when window opens.")]
+        [SerializeField] private AudioClip windowOpenSound;
+        [Tooltip("Sound played when window closes.")]
+        [SerializeField] private AudioClip windowCloseSound;
         [Tooltip("Sound played when selling fish.")]
         [SerializeField] private AudioClip sellFishSound;
         [Tooltip("Sound played when buying an item upgrade.")]
@@ -37,7 +42,11 @@ namespace LittleTrawling.UI
             if (clip == null) return;
             if (_audioSource == null)
             {
-                _audioSource = gameObject.GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+                _audioSource = GetComponent<AudioSource>();
+                if (_audioSource == null)
+                {
+                    _audioSource = gameObject.AddComponent<AudioSource>();
+                }
                 _audioSource.spatialBlend = 0f;
             }
             _audioSource.PlayOneShot(clip);
@@ -150,10 +159,12 @@ namespace LittleTrawling.UI
                 Cursor.visible = true;
                 _modalRoot.SetActive(true);
                 RebuildShopContent();
+                PlaySFX(windowOpenSound != null ? windowOpenSound : ProceduralAudioSynthesizer.GetWindowOpenSound());
             }
             else if (!_isOpen && wasOpen)
             {
                 _modalRoot.SetActive(false);
+                PlaySFX(windowCloseSound != null ? windowCloseSound : ProceduralAudioSynthesizer.GetWindowCloseSound());
             }
         }
 
@@ -224,7 +235,7 @@ namespace LittleTrawling.UI
             headerLabelRt.offsetMin = new Vector2(UITheme.Padding, 0);
             headerLabelRt.offsetMax = new Vector2(-60f, 0);
 
-            Button closeBtn = UITheme.CreateButton("CloseBtn", headerBar, "✕",
+            Button closeBtn = UITheme.CreateButton("CloseBtn", headerBar, "X",
                 UITheme.Gold, UITheme.TextWhite, UITheme.BodyFontSize, 48f, 48f);
             RectTransform closeBtnRt = closeBtn.GetComponent<RectTransform>();
             closeBtnRt.anchorMin = new Vector2(1, 0.5f);

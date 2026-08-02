@@ -89,7 +89,7 @@ namespace LittleTrawling.UI
             goldSection.offsetMin = new Vector2(14, 0);
             goldSection.offsetMax = new Vector2(0, 0);
 
-            _goldLabel = UITheme.CreateLabel("GoldLabel", goldSection, "🪙 0",
+            _goldLabel = UITheme.CreateLabel("GoldLabel", goldSection, "$0",
                 UITheme.BodyFontSize, UITheme.TextGold, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
             UITheme.StretchFill(_goldLabel.rectTransform);
 
@@ -168,7 +168,7 @@ namespace LittleTrawling.UI
         private void RefreshGold(int gold)
         {
             if (_goldLabel != null)
-                _goldLabel.text = $"🪙 {gold:N0}";
+                _goldLabel.text = $"${gold:N0}";
         }
 
         private void RefreshFishCount()

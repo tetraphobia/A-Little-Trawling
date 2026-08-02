@@ -38,6 +38,10 @@ namespace LittleTrawling.Vehicles
         [SerializeField] private AudioClip exitBoatSound;
         [Tooltip("Sound played when accelerating the boat.")]
         [SerializeField] private AudioClip accelerateSound;
+        [Tooltip("Sound played while moving through water.")]
+        [SerializeField] private AudioClip wakeSplashSound;
+        [Tooltip("Sound played when contacting dock/berth.")]
+        [SerializeField] private AudioClip dockTouchSound;
 
         private Rigidbody _rb;
         private bool _piloting;
@@ -256,7 +260,11 @@ namespace LittleTrawling.Vehicles
         {
             if (_audioSource == null)
             {
-                _audioSource = gameObject.GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+                _audioSource = GetComponent<AudioSource>();
+                if (_audioSource == null)
+                {
+                    _audioSource = gameObject.AddComponent<AudioSource>();
+                }
                 _audioSource.spatialBlend = 0f;
             }
         }

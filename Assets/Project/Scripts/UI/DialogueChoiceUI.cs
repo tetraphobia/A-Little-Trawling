@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using LittleTrawling.Audio;
 using LittleTrawling.Core;
 
 namespace LittleTrawling.UI
@@ -20,11 +21,19 @@ namespace LittleTrawling.UI
     }
 
     /// <summary>
-    /// Displays Animal Crossing style dialogue choice options.
+    /// Displays Animal Crossing style dialogue choice options floating outside, directly top-right of the main dialogue window.
     /// </summary>
     public class DialogueChoiceUI : MonoBehaviour
     {
         public static DialogueChoiceUI Instance { get; private set; }
+
+        public bool IsShowingChoices => _modalRoot != null && _modalRoot.activeSelf;
+
+        [Header("Audio SFX")]
+        [Tooltip("Sound played when selecting a dialogue option.")]
+        [SerializeField] private AudioClip choiceSelectSound;
+        [Tooltip("Sound played when hovering a dialogue option button.")]
+        [SerializeField] private AudioClip choiceHoverSound;
 
         private Canvas _canvas;
         private GameObject _modalRoot;
@@ -57,14 +66,15 @@ namespace LittleTrawling.UI
             RectTransform modalRt = _modalRoot.AddComponent<RectTransform>();
             UITheme.StretchFill(modalRt);
 
+            // Floating container directly top-right outside of the main dialogue window
             Image border = UITheme.CreatePanel("ChoiceContainerBorder", _modalRoot.transform,
                 UITheme.PanelSprite, UITheme.Gold);
             RectTransform borderRt = border.rectTransform;
-            borderRt.anchorMin = new Vector2(1, 0);
-            borderRt.anchorMax = new Vector2(1, 0);
-            borderRt.pivot = new Vector2(1, 0);
-            borderRt.sizeDelta = new Vector2(340f, 130f);
-            borderRt.anchoredPosition = new Vector2(-60f, 240f);
+            borderRt.anchorMin = new Vector2(0.5f, 0);
+            borderRt.anchorMax = new Vector2(0.5f, 0);
+            borderRt.pivot = new Vector2(1, 0); // Bottom-right corner aligned with top-right of dialogue box
+            borderRt.sizeDelta = new Vector2(300f, 120f);
+            borderRt.anchoredPosition = new Vector2(420f, 236f);
 
             Image panelBg = UITheme.CreatePanel("ChoiceContainerBg", border.transform,
                 UITheme.PanelSprite, UITheme.CardWhite);
@@ -98,10 +108,12 @@ namespace LittleTrawling.UI
             {
                 var capturedChoice = choice;
                 Button btn = UITheme.CreateButton("ChoiceBtn", _buttonContainer, choice.text,
-                    UITheme.BackgroundMint, UITheme.TextBrown, UITheme.BodyFontSize, 300f, 48f);
+                    UITheme.BackgroundMint, UITheme.TextBrown, UITheme.BodyFontSize - 2f, 280f, 46f);
 
                 btn.onClick.AddListener(() =>
                 {
+                    AudioClip clip = choiceSelectSound != null ? choiceSelectSound : ProceduralAudioSynthesizer.GetChoiceSelectSound();
+                    AudioSource.PlayClipAtPoint(clip, Camera.main != null ? Camera.main.transform.position : transform.position, 1.0f);
                     HideChoices();
                     capturedChoice.onSelect?.Invoke();
                 });

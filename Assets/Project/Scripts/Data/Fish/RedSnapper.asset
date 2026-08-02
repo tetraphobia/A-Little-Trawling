@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Data.Fish
   displayName: Red Snapper
   description: Vibrant pinkish-red scales and sharp teeth. Delicious and sought after by coastal taverns.
-  sprite: {fileID: 21300000, guid: c6719350a960e4a49985efcaf2d7efc8, type: 3}
+  sprite: {fileID: 21300000, guid: c6c4ea1b87744944db83d93d9812ff45, type: 3}
   catchSound: {fileID: 8300000, guid: 18daf0139f3cb194eb393f2c434f1a13, type: 3}
   rarity: 1
   tier: 1

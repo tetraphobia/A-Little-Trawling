@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LittleTrawling.Audio;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Entities;
@@ -39,13 +40,25 @@ namespace LittleTrawling.Systems
         [SerializeField] private float biteWindowDuration = 1.5f;
 
         [Header("Audio SFX")]
+        [Tooltip("Sound played while holding [F] to charge cast distance.")]
+        [SerializeField] private AudioClip castChargeSound;
+        [Tooltip("Sound played when releasing [F] to hurl the bobber.")]
+        [SerializeField] private AudioClip castReleaseSound;
         [Tooltip("Sound played when the bobber lands in the water.")]
         [SerializeField] private AudioClip bobberWaterLandingSound;
+        [Tooltip("Sound played when a fish bites and bobber dips under.")]
+        [SerializeField] private AudioClip fishBiteSound;
         [Tooltip("General sound played when a fish is successfully hooked/caught.")]
         [SerializeField] private AudioClip fishCaughtSuccessSound;
+        [Tooltip("Sound played when a bite is missed or fish escapes.")]
+        [SerializeField] private AudioClip fishEscapedSound;
+        [Tooltip("Minimum pitch shift for fish catch audio.")]
+        [SerializeField] private float minCatchPitch = 0.70f;
+        [Tooltip("Maximum pitch shift for fish catch audio.")]
+        [SerializeField] private float maxCatchPitch = 1.45f;
 
         public event System.Action OnFishingStarted;
-        public event System.Action<Fish, float, float, int> OnFishCaught;
+        public event System.Action<Fish, float, float, int, LunkerStatus> OnFishCaught;
         public event System.Action OnFishingCompleted;
         public event System.Action OnFishingFailed;
 
@@ -139,6 +152,9 @@ namespace LittleTrawling.Systems
                         CurrentState = FishingState.Charging;
                         _chargeTimer = 0f;
                         UpdatePreviewBobber();
+
+                        AudioClip chargeClip = castChargeSound != null ? castChargeSound : ProceduralAudioSynthesizer.GetCastChargeSound();
+                        AudioSource.PlayClipAtPoint(chargeClip, transform.position, 1.0f);
                     }
                     break;
 
@@ -180,6 +196,9 @@ namespace LittleTrawling.Systems
                 OnMissedWaterLanding();
                 return;
             }
+
+            AudioClip releaseClip = castReleaseSound != null ? castReleaseSound : ProceduralAudioSynthesizer.GetCastReleaseSound();
+            AudioSource.PlayClipAtPoint(releaseClip, origin, 1.0f);
 
             SpawnBobber(_bobberTargetPosition);
 
@@ -352,6 +371,11 @@ namespace LittleTrawling.Systems
             {
                 CurrentState = FishingState.BiteActive;
                 _biteTimer = biteWindowDuration;
+
+                if (fishBiteSound != null && _bobberObject != null)
+                {
+                    AudioSource.PlayClipAtPoint(fishBiteSound, _bobberObject.transform.position, 1.0f);
+                }
             }
             else
             {
@@ -361,7 +385,11 @@ namespace LittleTrawling.Systems
 
         private void OnBiteExpired()
         {
-            // Missed bite window
+            if (fishEscapedSound != null && _bobberObject != null)
+            {
+                AudioSource.PlayClipAtPoint(fishEscapedSound, _bobberObject.transform.position, 1.0f);
+            }
+
             DestroyBobber();
             CurrentState = FishingState.Idle;
 
@@ -448,8 +476,6 @@ namespace LittleTrawling.Systems
             {
                 AudioSource.PlayClipAtPoint(bobberWaterLandingSound, position, 1.0f);
             }
-
-            Debug.Log($"[BobberDebug Spawn] Created FishingBobber at ({position.x:F2}, {position.y:F2}, {position.z:F2}) using shader '{Get3DShader().name}'");
 
             // Red & White Sphere Body
             var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -594,7 +620,7 @@ namespace LittleTrawling.Systems
 
             if (fishCaughtSuccessSound != null)
             {
-                AudioSource.PlayClipAtPoint(fishCaughtSuccessSound, bobberPos, 1.0f);
+                PlayPitchShiftedSFX(fishCaughtSuccessSound, bobberPos);
             }
 
             Fish species = SelectWeightedFishByRodTier(bobberPos);
@@ -604,7 +630,24 @@ namespace LittleTrawling.Systems
 
             int goldEarned = Mathf.RoundToInt(species.baseValue * (size / Mathf.Max(0.01f, species.minSize)));
 
-            StartCoroutine(AnimateFishCatchArc(species, bobberPos, sizeCm, weight, goldEarned));
+            LunkerStatus lunkerStatus = LunkerStatus.Normal;
+            float lunkerRoll = Random.value;
+            if (lunkerRoll <= 0.01f)
+            {
+                lunkerStatus = LunkerStatus.MegaLunker;
+                sizeCm *= 6f;
+                weight *= 6f;
+                goldEarned *= 6;
+            }
+            else if (lunkerRoll <= 0.11f)
+            {
+                lunkerStatus = LunkerStatus.Lunker;
+                sizeCm *= 3f;
+                weight *= 3f;
+                goldEarned *= 3;
+            }
+
+            StartCoroutine(AnimateFishCatchArc(species, bobberPos, sizeCm, weight, goldEarned, lunkerStatus));
         }
 
         public float GetWaterDepthAt(Vector3 pos)
@@ -704,7 +747,7 @@ namespace LittleTrawling.Systems
             };
         }
 
-        private System.Collections.IEnumerator AnimateFishCatchArc(Fish species, Vector3 startPos, float sizeCm, float weight, int goldEarned)
+        private System.Collections.IEnumerator AnimateFishCatchArc(Fish species, Vector3 startPos, float sizeCm, float weight, int goldEarned, LunkerStatus lunkerStatus = LunkerStatus.Normal)
         {
             Vector3 origin = CalculateCastOrigin(out _);
             Vector3 targetPos = origin + Vector3.up * 1.2f;
@@ -722,7 +765,7 @@ namespace LittleTrawling.Systems
                 sr.sprite = CreateFallbackFishSprite();
             }
 
-            float scaleMultiplier = Mathf.Clamp(sizeCm / 50f, 0.4f, 1.2f);
+            float scaleMultiplier = Mathf.Clamp(sizeCm / 100f, 0.2f, 0.6f);
             flyingFish.transform.localScale = Vector3.one * scaleMultiplier;
 
             float duration = 0.75f;
@@ -737,7 +780,7 @@ namespace LittleTrawling.Systems
                 catchAudio.clip = species.catchSound;
                 catchAudio.spatialBlend = 0f;
                 catchAudio.volume = 1.0f;
-                catchAudio.pitch = UnityEngine.Random.Range(0.85f, 1.18f);
+                catchAudio.pitch = Random.Range(minCatchPitch, maxCatchPitch);
                 catchAudio.Play();
             }
 
@@ -775,7 +818,7 @@ namespace LittleTrawling.Systems
                 gm.SetState(GameState.Walking);
             }
 
-            OnFishCaught?.Invoke(species, sizeCm, weight, goldEarned);
+            OnFishCaught?.Invoke(species, sizeCm, weight, goldEarned, lunkerStatus);
             OnFishingCompleted?.Invoke();
         }
 
@@ -815,6 +858,19 @@ namespace LittleTrawling.Systems
             tex.Apply();
             _fallbackSprite = Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), 100f);
             return _fallbackSprite;
+        }
+
+        private void PlayPitchShiftedSFX(AudioClip clip, Vector3 position)
+        {
+            if (clip == null) return;
+            GameObject tempGO = new GameObject("TempAudio_PitchShifted");
+            tempGO.transform.position = position;
+            AudioSource source = tempGO.AddComponent<AudioSource>();
+            source.clip = clip;
+            source.spatialBlend = 0f;
+            source.pitch = Random.Range(minCatchPitch, maxCatchPitch);
+            source.Play();
+            Destroy(tempGO, clip.length / Mathf.Max(0.1f, source.pitch) + 0.1f);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

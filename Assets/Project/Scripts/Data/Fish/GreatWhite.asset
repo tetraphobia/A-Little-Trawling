@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Data.Fish
   displayName: Great White Shark
   description: The apex predator of the high seas. Serrated teeth, massive jaws, and an unforgettable shadow beneath the waves.
-  sprite: {fileID: 21300000, guid: c6719350a960e4a49985efcaf2d7efc8, type: 3}
+  sprite: {fileID: 21300000, guid: 6bba274895a9e8948b895088addc537a, type: 3}
   catchSound: {fileID: 8300000, guid: 18daf0139f3cb194eb393f2c434f1a13, type: 3}
   rarity: 2
   tier: 3

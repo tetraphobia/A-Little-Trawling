@@ -47,14 +47,14 @@ namespace LittleTrawling.Systems
             if (Instance == this) Instance = null;
         }
 
-        private void HandleFishCaught(Fish species, float sizeCm, float weightKg, int sellPrice)
+        private void HandleFishCaught(Fish species, float sizeCm, float weightKg, int sellPrice, LunkerStatus lunkerStatus)
         {
-            AddFish(species, sizeCm, weightKg, sellPrice);
+            AddFish(species, sizeCm, weightKg, sellPrice, lunkerStatus);
         }
 
-        public void AddFish(Fish species, float sizeCm, float weightKg, int sellPrice)
+        public void AddFish(Fish species, float sizeCm, float weightKg, int sellPrice, LunkerStatus lunkerStatus = LunkerStatus.Normal)
         {
-            var caught = new CaughtFish(species, sizeCm, weightKg, sellPrice);
+            var caught = new CaughtFish(species, sizeCm, weightKg, sellPrice, lunkerStatus);
             items.Add(caught);
             OnInventoryChanged?.Invoke();
 
@@ -63,18 +63,42 @@ namespace LittleTrawling.Systems
                 bool isFirstTime = !_discoveredFishNames.Contains(species.displayName);
                 _discoveredFishNames.Add(species.displayName);
 
-                if (isFirstTime && DialogueManager.Instance != null)
+                if (isFirstTime || lunkerStatus != LunkerStatus.Normal)
                 {
                     string nameText = species.displayName;
-                    string descText = !string.IsNullOrEmpty(species.description)
-                        ? species.description
-                        : "A fine new addition to your fish inventory!";
+                    if (lunkerStatus == LunkerStatus.MegaLunker)
+                        nameText = $"<color=#FFD700>MEGA LUNKER! {species.displayName}</color>";
+                    else if (lunkerStatus == LunkerStatus.Lunker)
+                        nameText = $"<color=#EE5D5D>LUNKER! {species.displayName}</color>";
 
-                    DialogueManager.Instance.ShowDialogue("First Catch!", new string[]
+                    string speakerTitle = lunkerStatus switch
+                    {
+                        LunkerStatus.MegaLunker => "MEGA LUNKER!",
+                        LunkerStatus.Lunker => "LUNKER CATCH!",
+                        _ => "First Catch!"
+                    };
+
+                    string descText = lunkerStatus switch
+                    {
+                        LunkerStatus.MegaLunker => "HOLY COW! You hooked a legendary MEGA LUNKER! It's colossal and worth 6x value!",
+                        LunkerStatus.Lunker => "WOW! You landed a giant LUNKER! It's 3x size and value!",
+                        _ => !string.IsNullOrEmpty(species.description) ? species.description : "A fine new addition to your fish inventory!"
+                    };
+
+                    string[] dialogueLines = new string[]
                     {
                         $"Caught a <b>{nameText}</b>!",
                         descText
-                    });
+                    };
+
+                    if (FishCatchCelebrationSequence.Instance != null)
+                    {
+                        FishCatchCelebrationSequence.Instance.PlayCelebration(species, lunkerStatus, speakerTitle, dialogueLines);
+                    }
+                    else if (DialogueManager.Instance != null)
+                    {
+                        DialogueManager.Instance.ShowDialogue(speakerTitle, dialogueLines);
+                    }
                 }
             }
         }

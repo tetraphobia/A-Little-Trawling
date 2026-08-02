@@ -45,7 +45,11 @@ namespace LittleTrawling.Entities
             if (clip == null) return;
             if (_sfxAudioSource == null)
             {
-                _sfxAudioSource = gameObject.GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+                _sfxAudioSource = GetComponent<AudioSource>();
+                if (_sfxAudioSource == null)
+                {
+                    _sfxAudioSource = gameObject.AddComponent<AudioSource>();
+                }
                 _sfxAudioSource.spatialBlend = 0f;
             }
             _sfxAudioSource.PlayOneShot(clip);

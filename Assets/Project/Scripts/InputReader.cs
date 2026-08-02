@@ -101,9 +101,9 @@ namespace LittleTrawling.Core
                     _advanceDialogueAction.performed += OnAdvanceDialogueDown;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.LogWarning($"[InputReader] Optional action binding info: {ex.Message}");
+                // Optional actions ignored if not present in binding map
             }
         }
 

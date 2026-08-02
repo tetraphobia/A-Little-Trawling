@@ -207,7 +207,6 @@ namespace LittleTrawling.Systems
 
             var session = _currentSession;
             _currentSession = null;
-            _displayedText = "";
             _isLineFullyTyped = false;
 
             OnDialogueEnded?.Invoke();
@@ -218,6 +217,7 @@ namespace LittleTrawling.Systems
             }
             else
             {
+                _displayedText = "";
                 var gm = GameManager.Instance;
                 if (gm != null && gm.IsState(GameState.Dialogue))
                 {

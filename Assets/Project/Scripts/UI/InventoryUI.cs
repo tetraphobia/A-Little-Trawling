@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using LittleTrawling.Audio;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Systems;
@@ -17,6 +18,29 @@ namespace LittleTrawling.UI
         public static InventoryUI Instance { get; private set; }
 
         private bool _isOpen;
+        [Header("Audio SFX")]
+        [Tooltip("Sound played when inventory opens.")]
+        [SerializeField] private AudioClip windowOpenSound;
+        [Tooltip("Sound played when inventory closes.")]
+        [SerializeField] private AudioClip windowCloseSound;
+
+        private AudioSource _audioSource;
+
+        private void PlaySFX(AudioClip clip)
+        {
+            if (clip == null) return;
+            if (_audioSource == null)
+            {
+                _audioSource = GetComponent<AudioSource>();
+                if (_audioSource == null)
+                {
+                    _audioSource = gameObject.AddComponent<AudioSource>();
+                }
+                _audioSource.spatialBlend = 0f;
+            }
+            _audioSource.PlayOneShot(clip);
+        }
+
         private Canvas _canvas;
         private GameObject _modalRoot;
         private RectTransform _contentContainer;
@@ -68,7 +92,15 @@ namespace LittleTrawling.UI
         {
             _isOpen = !_isOpen;
             _modalRoot.SetActive(_isOpen);
-            if (_isOpen) RebuildCardList();
+            if (_isOpen)
+            {
+                RebuildCardList();
+                PlaySFX(windowOpenSound != null ? windowOpenSound : ProceduralAudioSynthesizer.GetWindowOpenSound());
+            }
+            else
+            {
+                PlaySFX(windowCloseSound != null ? windowCloseSound : ProceduralAudioSynthesizer.GetWindowCloseSound());
+            }
         }
 
         private void OnClosePressed()
@@ -77,6 +109,7 @@ namespace LittleTrawling.UI
             {
                 _isOpen = false;
                 _modalRoot.SetActive(false);
+                PlaySFX(windowCloseSound != null ? windowCloseSound : ProceduralAudioSynthesizer.GetWindowCloseSound());
             }
         }
 
@@ -117,7 +150,7 @@ namespace LittleTrawling.UI
             headerLabelRt.offsetMin = new Vector2(UITheme.Padding, 0);
             headerLabelRt.offsetMax = new Vector2(-60f, 0);
 
-            Button closeBtn = UITheme.CreateButton("CloseBtn", headerBar, "✕",
+            Button closeBtn = UITheme.CreateButton("CloseBtn", headerBar, "X",
                 UITheme.Gold, UITheme.TextWhite, UITheme.BodyFontSize, 48f, 48f);
             RectTransform closeBtnRt = closeBtn.GetComponent<RectTransform>();
             closeBtnRt.anchorMin = new Vector2(1, 0.5f);
@@ -207,11 +240,11 @@ namespace LittleTrawling.UI
             UITheme.StretchFill(cardBg.rectTransform, 2f, 2f, 2f, 2f);
 
             Sprite fishSprite = item.species != null ? item.species.sprite : null;
-            float frameWidth = 105f;
+            float frameWidth = 52f;
             float aspect = (fishSprite != null && fishSprite.rect.width > 0)
                 ? (fishSprite.rect.height / fishSprite.rect.width)
                 : 0.55f;
-            float frameHeight = Mathf.Clamp(frameWidth * aspect, 40f, 115f);
+            float frameHeight = Mathf.Clamp(frameWidth * aspect, 20f, 60f);
 
             Image spriteFrame = UITheme.CreatePanel("SpriteFrame", cardBg.transform,
                 UITheme.CardSprite, UITheme.BackgroundMint);
@@ -226,17 +259,17 @@ namespace LittleTrawling.UI
             {
                 Image fishImg = UITheme.CreatePanel("FishSprite", spriteFrame.transform, fishSprite, Color.white);
                 fishImg.preserveAspect = true;
-                UITheme.StretchFill(fishImg.rectTransform, 6f, 6f, 6f, 6f);
+                UITheme.StretchFill(fishImg.rectTransform, 4f, 4f, 4f, 4f);
             }
             else
             {
                 TextMeshProUGUI noSprite = UITheme.CreateLabel("NoSprite", spriteFrame.transform,
-                    "NO\nSPRITE", UITheme.SmallFontSize - 2f, UITheme.TextMuted, FontStyles.Italic, TextAlignmentOptions.Center);
+                    "NO\nSPRITE", UITheme.SmallFontSize - 4f, UITheme.TextMuted, FontStyles.Italic, TextAlignmentOptions.Center);
                 noSprite.textWrappingMode = TextWrappingModes.Normal;
                 UITheme.StretchFill(noSprite.rectTransform);
             }
 
-            float textLeft = 132f;
+            float textLeft = 78f;
             float textWidth = -150f;
 
             string fishName = item.species != null ? item.species.displayName : "Unknown Fish";
@@ -244,8 +277,15 @@ namespace LittleTrawling.UI
             string rarityHex = GetRarityColorHex(rarity);
             string rarityText = rarity.ToString();
 
+            string lunkerBadge = item.lunkerStatus switch
+            {
+                LunkerStatus.MegaLunker => "<color=#FFD700><b>[MEGA LUNKER!]</b></color> ",
+                LunkerStatus.Lunker => "<color=#EE5D5D><b>[LUNKER!]</b></color> ",
+                _ => ""
+            };
+
             TextMeshProUGUI nameLabel = UITheme.CreateLabel("NameLabel", cardBg.transform,
-                $"{fishName}  <size={UITheme.SmallFontSize}><color={rarityHex}><b>[{rarityText}]</b></color></size>",
+                $"{lunkerBadge}{fishName}  <size={UITheme.SmallFontSize}><color={rarityHex}><b>[{rarityText}]</b></color></size>",
                 20f, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
             nameLabel.richText = true;
             RectTransform nameLabelRt = nameLabel.rectTransform;
