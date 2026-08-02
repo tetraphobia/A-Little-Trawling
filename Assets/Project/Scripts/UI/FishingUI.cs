@@ -7,8 +7,7 @@ namespace LittleTrawling.UI
 {
     /// <summary>
     /// Displays onscreen fishing state indicators using uGUI:
-    /// charging progress bar, waiting-for-bite banner, and bite alert.
-    /// Styled with Animal Crossing warm pastel theme.
+    /// charging progress bar. Styled with Animal Crossing warm pastel theme.
     /// </summary>
     public class FishingUI : MonoBehaviour
     {
@@ -20,14 +19,6 @@ namespace LittleTrawling.UI
         private GameObject _chargingRoot;
         private Image _chargeBarFill;
         private TextMeshProUGUI _chargingLabel;
-
-        // Waiting state
-        private GameObject _waitingRoot;
-
-        // Bite state
-        private GameObject _biteRoot;
-        private TextMeshProUGUI _biteLabel;
-        private Image _biteBorderImage;
 
         private void Awake()
         {
@@ -53,13 +44,8 @@ namespace LittleTrawling.UI
             _canvas.transform.SetParent(transform, false);
 
             BuildChargingUI();
-            BuildWaitingUI();
-            BuildBiteUI();
 
-            // Hide all initially
             _chargingRoot.SetActive(false);
-            _waitingRoot.SetActive(false);
-            _biteRoot.SetActive(false);
         }
 
         private void BuildChargingUI()
@@ -90,66 +76,21 @@ namespace LittleTrawling.UI
             UITheme.StretchFill(_chargingLabel.rectTransform);
         }
 
-        private void BuildWaitingUI()
-        {
-            // Border
-            Image border = UITheme.CreatePanel("WaitingBorder", _canvas.transform,
-                UITheme.BadgeSprite, UITheme.Gold);
-            UITheme.AnchorBottomCenter(border.rectTransform, 500f, 60f, 90f);
-            _waitingRoot = border.gameObject;
-
-            // Background pill
-            Image bg = UITheme.CreatePanel("WaitingBg", border.transform,
-                UITheme.BadgeSprite, UITheme.CardWhite);
-            UITheme.StretchFill(bg.rectTransform, 3f, 3f, 3f, 3f);
-
-            // Label
-            TextMeshProUGUI label = UITheme.CreateLabel("WaitingLabel", bg.transform,
-                "Waiting for a bite... (Press <b>[F]</b> to recall)",
-                UITheme.BodyFontSize, UITheme.TextBrown, FontStyles.Normal, TextAlignmentOptions.Center);
-            label.richText = true;
-            UITheme.StretchFill(label.rectTransform, 16f, 16f, 0f, 0f);
-        }
-
-        private void BuildBiteUI()
-        {
-            // Border (pulsing)
-            Image border = UITheme.CreatePanel("BiteBorder", _canvas.transform,
-                UITheme.BadgeSprite, UITheme.Gold);
-            UITheme.AnchorBottomCenter(border.rectTransform, 520f, 76f, 130f);
-            _biteRoot = border.gameObject;
-            _biteBorderImage = border;
-
-            // Background pill
-            Image bg = UITheme.CreatePanel("BiteBg", border.transform,
-                UITheme.BadgeSprite, UITheme.CardWhite);
-            UITheme.StretchFill(bg.rectTransform, 3f, 3f, 3f, 3f);
-
-            // Label
-            _biteLabel = UITheme.CreateLabel("BiteLabel", bg.transform,
-                "BITE! PRESS [F] NOW!",
-                30f, UITheme.TextGold, FontStyles.Bold, TextAlignmentOptions.Center);
-            UITheme.StretchFill(_biteLabel.rectTransform, 16f, 16f, 0f, 0f);
-        }
-
         private void Update()
         {
             if (FishingManager.Instance == null) return;
 
             FishingState state = FishingManager.Instance.CurrentState;
+            bool isCharging = (state == FishingState.Charging);
 
-            _chargingRoot.SetActive(state == FishingState.Charging);
-            _waitingRoot.SetActive(state == FishingState.WaitingForBite);
-            _biteRoot.SetActive(state == FishingState.BiteActive);
-
-            switch (state)
+            if (_chargingRoot.activeSelf != isCharging)
             {
-                case FishingState.Charging:
-                    UpdateChargingBar();
-                    break;
-                case FishingState.BiteActive:
-                    UpdateBitePulse();
-                    break;
+                _chargingRoot.SetActive(isCharging);
+            }
+
+            if (isCharging)
+            {
+                UpdateChargingBar();
             }
         }
 
@@ -162,18 +103,6 @@ namespace LittleTrawling.UI
             fillRt.anchorMax = new Vector2(ratio, 1);
 
             _chargingLabel.text = $"Casting... {Mathf.RoundToInt(ratio * 100)}%";
-        }
-
-        private void UpdateBitePulse()
-        {
-            // Pulsing alpha on the border and label
-            float alpha = 0.6f + Mathf.PingPong(Time.time * 3f, 0.4f);
-            if (_biteBorderImage != null)
-            {
-                Color c = UITheme.Gold;
-                c.a = alpha;
-                _biteBorderImage.color = c;
-            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

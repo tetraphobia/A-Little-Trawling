@@ -314,16 +314,20 @@ namespace LittleTrawling.UI
         /// Creates a ScrollRect with a viewport mask and vertical content container.
         /// Returns (ScrollRect, contentTransform).
         /// </summary>
+        /// <summary>
+        /// Creates a ScrollRect with a viewport mask, vertical content container, and optional vertical scrollbar.
+        /// Returns (ScrollRect, contentTransform).
+        /// </summary>
         public static (ScrollRect scrollRect, RectTransform content) CreateScrollView(
-            string name, Transform parent)
+            string name, Transform parent, bool addScrollbar = true, float scrollSensitivity = 10f)
         {
             // Scroll View root
             RectTransform scrollRt = CreateRect(name, parent);
             ScrollRect scrollRect = scrollRt.gameObject.AddComponent<ScrollRect>();
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
-            scrollRect.movementType = ScrollRect.MovementType.Elastic;
-            scrollRect.scrollSensitivity = 30f;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.scrollSensitivity = scrollSensitivity;
 
             // Viewport with mask
             Image viewportImg = CreatePanel(name + "_Viewport", scrollRt, PanelSprite, Color.white);
@@ -332,7 +336,7 @@ namespace LittleTrawling.UI
             viewportRt.anchorMin = Vector2.zero;
             viewportRt.anchorMax = Vector2.one;
             viewportRt.offsetMin = Vector2.zero;
-            viewportRt.offsetMax = Vector2.zero;
+            viewportRt.offsetMax = addScrollbar ? new Vector2(-24f, 0) : Vector2.zero;
             Mask mask = viewportImg.gameObject.AddComponent<Mask>();
             mask.showMaskGraphic = false;
 
@@ -341,8 +345,8 @@ namespace LittleTrawling.UI
             contentRt.anchorMin = new Vector2(0, 1);
             contentRt.anchorMax = new Vector2(1, 1);
             contentRt.pivot = new Vector2(0.5f, 1f);
-            contentRt.offsetMin = new Vector2(0, 0);
-            contentRt.offsetMax = new Vector2(0, 0);
+            contentRt.offsetMin = Vector2.zero;
+            contentRt.offsetMax = Vector2.zero;
 
             VerticalLayoutGroup vlg = contentRt.gameObject.AddComponent<VerticalLayoutGroup>();
             vlg.spacing = CardSpacing;
@@ -358,6 +362,35 @@ namespace LittleTrawling.UI
 
             scrollRect.viewport = viewportRt;
             scrollRect.content = contentRt;
+
+            if (addScrollbar)
+            {
+                // Vertical Scrollbar track
+                Image trackImg = CreatePanel(name + "_Scrollbar", scrollRt, BadgeSprite, new Color32(215, 235, 230, 255));
+                RectTransform trackRt = trackImg.rectTransform;
+                trackRt.anchorMin = new Vector2(1, 0);
+                trackRt.anchorMax = new Vector2(1, 1);
+                trackRt.pivot = new Vector2(1, 1);
+                trackRt.sizeDelta = new Vector2(16f, 0);
+                trackRt.anchoredPosition = Vector2.zero;
+
+                // Sliding Area
+                RectTransform slidingArea = CreateRect("Sliding Area", trackImg.transform);
+                StretchFill(slidingArea, 2f, 2f, 2f, 2f);
+
+                // Handle
+                Image handleImg = CreatePanel("Handle", slidingArea, ButtonSprite, Gold);
+                RectTransform handleRt = handleImg.rectTransform;
+                handleRt.sizeDelta = new Vector2(0, 0);
+
+                Scrollbar sb = trackImg.gameObject.AddComponent<Scrollbar>();
+                sb.direction = Scrollbar.Direction.BottomToTop;
+                sb.targetGraphic = handleImg;
+                sb.handleRect = handleRt;
+
+                scrollRect.verticalScrollbar = sb;
+                scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+            }
 
             return (scrollRect, contentRt);
         }

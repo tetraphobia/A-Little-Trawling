@@ -222,23 +222,23 @@ namespace LittleTrawling.UI
             headerBar.anchoredPosition = Vector2.zero;
 
             TextMeshProUGUI headerLabel = UITheme.CreateLabel("HeaderLabel", headerBar,
-                "Hey, fisherbird. Wanna buy something?",
-                UITheme.TitleFontSize, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
+                "Shop",
+                UITheme.HeaderFontSize - 2f, UITheme.TextBrown, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
             RectTransform headerLabelRt = headerLabel.rectTransform;
             headerLabelRt.anchorMin = Vector2.zero;
-            headerLabelRt.anchorMax = new Vector2(0.65f, 1);
+            headerLabelRt.anchorMax = Vector2.one;
             headerLabelRt.offsetMin = new Vector2(UITheme.Padding, 0);
-            headerLabelRt.offsetMax = Vector2.zero;
+            headerLabelRt.offsetMax = new Vector2(-60f, 0);
 
-            // Gold balance label (right side of header)
-            _goldLabel = UITheme.CreateLabel("GoldBalance", headerBar,
-                "Gold: $0",
-                UITheme.BodyFontSize, UITheme.TextGold, FontStyles.Bold, TextAlignmentOptions.MidlineRight);
-            RectTransform goldRt = _goldLabel.rectTransform;
-            goldRt.anchorMin = new Vector2(0.65f, 0);
-            goldRt.anchorMax = Vector2.one;
-            goldRt.offsetMin = Vector2.zero;
-            goldRt.offsetMax = new Vector2(-UITheme.Padding, 0);
+            // Close button [✕] at top right
+            Button closeBtn = UITheme.CreateButton("CloseBtn", headerBar, "✕",
+                UITheme.Gold, UITheme.TextWhite, UITheme.BodyFontSize, 48f, 48f);
+            RectTransform closeBtnRt = closeBtn.GetComponent<RectTransform>();
+            closeBtnRt.anchorMin = new Vector2(1, 0.5f);
+            closeBtnRt.anchorMax = new Vector2(1, 0.5f);
+            closeBtnRt.pivot = new Vector2(1, 0.5f);
+            closeBtnRt.anchoredPosition = new Vector2(-12f, 0);
+            closeBtn.onClick.AddListener(CloseShop);
 
             // Separator
             Image sep = UITheme.CreatePanel("Separator", panelBg.transform, null, UITheme.AccentSkyBlue);
@@ -252,26 +252,34 @@ namespace LittleTrawling.UI
             sepRt.offsetMax = new Vector2(-UITheme.Padding, sepRt.offsetMax.y);
 
             // ── Scroll View ──
-            var (scrollRect, content) = UITheme.CreateScrollView("ShopScroll", panelBg.transform);
+            var (scrollRect, content) = UITheme.CreateScrollView("ShopScroll", panelBg.transform, true, 8f);
             RectTransform scrollRt = scrollRect.GetComponent<RectTransform>();
             scrollRt.anchorMin = Vector2.zero;
             scrollRt.anchorMax = Vector2.one;
-            scrollRt.offsetMin = new Vector2(UITheme.Padding, 60f); // Room for close button
+            scrollRt.offsetMin = new Vector2(UITheme.Padding, 72f); // Room for bottom gold bar
             scrollRt.offsetMax = new Vector2(-UITheme.Padding, -62f);
             _contentContainer = content;
 
-            // ── Close Shop Button ──
-            Button closeBtn = UITheme.CreateButton("CloseShopBtn", panelBg.transform, "Close Shop",
-                UITheme.Gold, UITheme.TextWhite, UITheme.BodyFontSize, 0f, UITheme.ButtonHeight);
-            RectTransform closeBtnRt = closeBtn.GetComponent<RectTransform>();
-            closeBtnRt.anchorMin = new Vector2(0, 0);
-            closeBtnRt.anchorMax = new Vector2(1, 0);
-            closeBtnRt.pivot = new Vector2(0.5f, 0);
-            closeBtnRt.sizeDelta = new Vector2(0, UITheme.ButtonHeight);
-            closeBtnRt.anchoredPosition = new Vector2(0, UITheme.Padding / 2f);
-            closeBtnRt.offsetMin = new Vector2(UITheme.Padding, closeBtnRt.offsetMin.y);
-            closeBtnRt.offsetMax = new Vector2(-UITheme.Padding, closeBtnRt.offsetMax.y);
-            closeBtn.onClick.AddListener(CloseShop);
+            // ── Bottom Gold Balance Display ──
+            Image goldBorder = UITheme.CreatePanel("GoldBottomBorder", panelBg.transform,
+                UITheme.BadgeSprite, UITheme.Gold);
+            RectTransform goldBorderRt = goldBorder.rectTransform;
+            goldBorderRt.anchorMin = new Vector2(0, 0);
+            goldBorderRt.anchorMax = new Vector2(1, 0);
+            goldBorderRt.pivot = new Vector2(0.5f, 0);
+            goldBorderRt.sizeDelta = new Vector2(0, UITheme.ButtonHeight);
+            goldBorderRt.anchoredPosition = new Vector2(0, UITheme.Padding / 2f);
+            goldBorderRt.offsetMin = new Vector2(UITheme.Padding, goldBorderRt.offsetMin.y);
+            goldBorderRt.offsetMax = new Vector2(-UITheme.Padding, goldBorderRt.offsetMax.y);
+
+            Image goldBg = UITheme.CreatePanel("GoldBottomBg", goldBorder.transform,
+                UITheme.BadgeSprite, UITheme.CardWhite);
+            UITheme.StretchFill(goldBg.rectTransform, 3f, 3f, 3f, 3f);
+
+            _goldLabel = UITheme.CreateLabel("GoldBalance", goldBg.transform,
+                "Gold: $0",
+                UITheme.TitleFontSize, UITheme.TextGold, FontStyles.Bold, TextAlignmentOptions.Center);
+            UITheme.StretchFill(_goldLabel.rectTransform);
 
             _modalRoot.SetActive(false);
         }
@@ -291,7 +299,7 @@ namespace LittleTrawling.UI
             _goldLabel.text = $"Gold: ${currentGold}";
 
             // ── Sell Fish Section ──
-            BuildSectionHeader("Sell Caught Fish");
+            BuildSectionHeader("Sell");
             BuildSellFishCard();
 
             // ── Spacer ──
@@ -365,7 +373,7 @@ namespace LittleTrawling.UI
             {
                 // Empty state
                 TextMeshProUGUI emptyLabel = UITheme.CreateLabel("EmptyLabel", cardBg.transform,
-                    "No fish in inventory to sell. Go fishing with [F]!",
+                    "No fish in inventory to sell.",
                     UITheme.SmallFontSize, UITheme.TextMuted, FontStyles.Italic, TextAlignmentOptions.MidlineLeft);
                 RectTransform emptyLabelRt = emptyLabel.rectTransform;
                 emptyLabelRt.anchorMin = Vector2.zero;
@@ -422,7 +430,7 @@ namespace LittleTrawling.UI
             Image cardBorder = UITheme.CreatePanel("EngineCard_" + eng.displayName, _contentContainer,
                 UITheme.CardSprite, UITheme.AccentSkyBlue);
             LayoutElement le = cardBorder.gameObject.AddComponent<LayoutElement>();
-            le.preferredHeight = 70f;
+            le.preferredHeight = 84f;
             le.flexibleWidth = 1f;
 
             Image cardBg = UITheme.CreatePanel("CardBg", cardBorder.transform,
@@ -431,7 +439,7 @@ namespace LittleTrawling.UI
 
             // Title + stats
             string title = $"<b>{eng.displayName}</b> ({eng.tier} Tier)";
-            string stats = $"Speed: {eng.maxSpeed:F1} m/s | Accel: {eng.acceleration:F1} m/s² | Decel: {eng.deceleration:F1} m/s² | Turn: {eng.turnSpeed:F0}°/s";
+            string stats = $"Speed: <b>{eng.maxSpeed:F1} m/s</b>  |  Accel: <b>{eng.acceleration:F1} m/s²</b>\nDecel: <b>{eng.deceleration:F1} m/s²</b>  |  Turn: <b>{eng.turnSpeed:F0}°/s</b>";
 
             TextMeshProUGUI titleLabel = UITheme.CreateLabel("Title", cardBg.transform,
                 title, UITheme.SmallFontSize + 1f, UITheme.TextBrown, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
@@ -444,6 +452,7 @@ namespace LittleTrawling.UI
 
             TextMeshProUGUI statsLabel = UITheme.CreateLabel("Stats", cardBg.transform,
                 stats, UITheme.SmallFontSize - 2f, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            statsLabel.richText = true;
             RectTransform statsRt = statsLabel.rectTransform;
             statsRt.anchorMin = new Vector2(0, 0);
             statsRt.anchorMax = new Vector2(0.7f, 0.5f);
@@ -496,7 +505,7 @@ namespace LittleTrawling.UI
             Image cardBorder = UITheme.CreatePanel("RodCard_" + rod.displayName, _contentContainer,
                 UITheme.CardSprite, UITheme.AccentSkyBlue);
             LayoutElement le = cardBorder.gameObject.AddComponent<LayoutElement>();
-            le.preferredHeight = 70f;
+            le.preferredHeight = 84f;
             le.flexibleWidth = 1f;
 
             Image cardBg = UITheme.CreatePanel("CardBg", cardBorder.transform,
@@ -505,7 +514,7 @@ namespace LittleTrawling.UI
 
             // Title + stats
             string title = $"<b>{rod.displayName}</b> ({rod.tier} Tier)";
-            string stats = $"Unlocks: Tier {(int)rod.tier} Fish Species | High-Tier Catch Rate: +{((int)rod.tier * 30)}%";
+            string stats = $"Unlocks Tier {(int)rod.tier} Fish species.\nHigher tier rods increase chance of catching rare fish!";
 
             TextMeshProUGUI titleLabel = UITheme.CreateLabel("Title", cardBg.transform,
                 title, UITheme.SmallFontSize + 1f, UITheme.TextBrown, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
@@ -518,6 +527,7 @@ namespace LittleTrawling.UI
 
             TextMeshProUGUI statsLabel = UITheme.CreateLabel("Stats", cardBg.transform,
                 stats, UITheme.SmallFontSize - 2f, UITheme.TextMuted, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            statsLabel.richText = true;
             RectTransform statsRt = statsLabel.rectTransform;
             statsRt.anchorMin = new Vector2(0, 0);
             statsRt.anchorMax = new Vector2(0.7f, 0.5f);

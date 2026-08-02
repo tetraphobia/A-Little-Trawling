@@ -110,9 +110,9 @@ namespace LittleTrawling.Interaction
         {
             var target = CurrentInteractable;
             var gm = GameManager.Instance;
-            bool isWalkingOrPiloting = gm == null || gm.IsState(GameState.Walking) || gm.IsState(GameState.Piloting);
+            bool isWalking = gm == null || gm.IsState(GameState.Walking);
 
-            if (target == null || !isWalkingOrPiloting)
+            if (target == null || !isWalking)
             {
                 if (_promptRoot != null && _promptRoot.activeSelf)
                     _promptRoot.SetActive(false);
