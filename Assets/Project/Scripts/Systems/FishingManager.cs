@@ -679,14 +679,14 @@ namespace LittleTrawling.Systems
 
             Destroy(flyingFish);
 
-            OnFishCaught?.Invoke(species, sizeCm, weight, goldEarned);
-            OnFishingCompleted?.Invoke();
-
             var gm = GameManager.Instance;
             if (gm != null)
             {
                 gm.SetState(GameState.Walking);
             }
+
+            OnFishCaught?.Invoke(species, sizeCm, weight, goldEarned);
+            OnFishingCompleted?.Invoke();
         }
 
         private static Sprite _fallbackSprite;

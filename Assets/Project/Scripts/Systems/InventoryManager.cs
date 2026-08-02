@@ -13,6 +13,7 @@ namespace LittleTrawling.Systems
         public static InventoryManager Instance { get; private set; }
 
         [SerializeField] private List<CaughtFish> items = new List<CaughtFish>();
+        private readonly HashSet<string> _discoveredFishNames = new HashSet<string>();
 
         public IReadOnlyList<CaughtFish> Items => items;
         public int TotalCount => items.Count;
@@ -56,6 +57,16 @@ namespace LittleTrawling.Systems
             var caught = new CaughtFish(species, sizeCm, weightKg, sellPrice);
             items.Add(caught);
             OnInventoryChanged?.Invoke();
+
+            if (species != null)
+            {
+                bool isNewDiscovery = _discoveredFishNames.Add(species.displayName);
+                if (isNewDiscovery && DialogueManager.Instance != null)
+                {
+                    string dialogueText = $"You caught a {species.displayName}! {species.description}";
+                    DialogueManager.Instance.ShowDialogue("Notice", new string[] { dialogueText }, null, new Color(0.2f, 0.85f, 0.4f));
+                }
+            }
         }
 
         public bool RemoveFish(CaughtFish item)
