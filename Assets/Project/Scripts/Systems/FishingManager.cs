@@ -380,7 +380,7 @@ namespace LittleTrawling.Systems
 
         private Vector3 CalculateCastOrigin(out Vector3 forward)
         {
-            var player = Object.FindAnyObjectByType<PlayerController>();
+            var player = PlayerController.Instance;
             if (player != null)
             {
                 forward = player.transform.forward;
@@ -389,7 +389,7 @@ namespace LittleTrawling.Systems
                 return player.transform.position;
             }
 
-            var boat = Object.FindAnyObjectByType<BoatController>();
+            var boat = BoatController.Instance;
             if (boat != null)
             {
                 forward = boat.ForwardDirection;
@@ -562,7 +562,7 @@ namespace LittleTrawling.Systems
                 LoadFishCatalog();
             }
 
-            var player = UnityEngine.Object.FindAnyObjectByType<PlayerController>();
+            var player = PlayerController.Instance;
             Rod rod = player != null ? player.Rod : null;
             int rodTier = (int)(rod != null ? rod.tier : RodTier.Beginner);
 

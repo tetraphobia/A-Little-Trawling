@@ -153,6 +153,8 @@ namespace LittleTrawling.UI
             GUI.EndScrollView();
         }
 
+        private static GUIStyle _noSpriteStyle;
+
         private void DrawFishSprite(Rect rect, Sprite sprite)
         {
             GUI.Box(rect, "");
@@ -186,7 +188,7 @@ namespace LittleTrawling.UI
             }
             else
             {
-                GUI.Label(rect, "<size=13><color=#aaaaaa>NO SPRITE</color></size>", new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, richText = true });
+                GUI.Label(rect, "<size=13><color=#aaaaaa>NO SPRITE</color></size>", _noSpriteStyle);
             }
         }
 
@@ -236,6 +238,12 @@ namespace LittleTrawling.UI
             };
 
             _emptyStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                richText = true
+            };
+
+            _noSpriteStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
                 richText = true

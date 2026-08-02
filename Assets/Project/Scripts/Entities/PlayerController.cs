@@ -30,6 +30,8 @@ namespace LittleTrawling.Entities
         private static readonly int IsSprintingHash = Animator.StringToHash("IsSprinting");
         private static readonly int JumpHash = Animator.StringToHash("Jump");
 
+        public static PlayerController Instance { get; private set; }
+
         public Rod Rod
         {
             get => rod;
@@ -51,6 +53,13 @@ namespace LittleTrawling.Entities
 
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+
             _cc = GetComponent<CharacterController>();
             _boatController = GetComponentInParent<BoatController>() ?? Object.FindAnyObjectByType<BoatController>();
             if (_boatController != null)

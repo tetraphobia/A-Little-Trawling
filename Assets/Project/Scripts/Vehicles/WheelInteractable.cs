@@ -65,11 +65,14 @@ namespace LittleTrawling.Vehicles
         private PlayerController GetPlayer()
         {
             if (_player != null) return _player;
-
-            var playerObj = GameObject.FindGameObjectWithTag(playerTag);
-            if (playerObj != null)
+            _player = PlayerController.Instance;
+            if (_player == null)
             {
-                _player = playerObj.GetComponentInParent<PlayerController>() ?? playerObj.GetComponent<PlayerController>();
+                var playerObj = GameObject.FindGameObjectWithTag(playerTag);
+                if (playerObj != null)
+                {
+                    _player = playerObj.GetComponentInParent<PlayerController>() ?? playerObj.GetComponent<PlayerController>();
+                }
             }
             return _player;
         }

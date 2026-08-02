@@ -65,7 +65,7 @@ namespace LittleTrawling.Interaction
         private void OnInteractPressed()
         {
             var gm = GameManager.Instance;
-            if (gm == null || !gm.IsState(GameState.Walking)) return;
+            if (gm == null || (!gm.IsState(GameState.Walking) && !gm.IsState(GameState.Piloting))) return;
 
             var target = CurrentInteractable;
             if (target != null)

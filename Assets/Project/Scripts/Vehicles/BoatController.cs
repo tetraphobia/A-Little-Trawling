@@ -62,11 +62,20 @@ namespace LittleTrawling.Vehicles
         public float AngularAcceleration => engine != null ? engine.angularAcceleration : 80f;
         public float AngularDeceleration => engine != null ? engine.angularDeceleration : 35f;
 
+        public static BoatController Instance { get; private set; }
+
         public Dock CurrentDockZone { get; set; }
         public bool IsDocked { get; private set; }
 
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+
             _rb = GetComponent<Rigidbody>();
             _rb.isKinematic = true;
             _currentYaw = transform.eulerAngles.y;

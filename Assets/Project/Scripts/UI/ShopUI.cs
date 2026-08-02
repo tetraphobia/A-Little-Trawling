@@ -213,7 +213,7 @@ namespace LittleTrawling.UI
 
             // Engines
             GUILayout.Label("<size=16><b>Engines</b></size>");
-            var boat = UnityEngine.Object.FindAnyObjectByType<BoatController>();
+            var boat = BoatController.Instance;
             Engine currentEngine = boat != null ? boat.Engine : null;
 
             foreach (var eng in availableEngines)
@@ -254,7 +254,7 @@ namespace LittleTrawling.UI
 
             // Fishing rods
             GUILayout.Label("<size=16><b>Fishing Rods</b></size>");
-            var player = UnityEngine.Object.FindAnyObjectByType<PlayerController>();
+            var player = PlayerController.Instance;
             Rod currentRod = player != null ? player.Rod : null;
 
             foreach (var rod in availableRods)
