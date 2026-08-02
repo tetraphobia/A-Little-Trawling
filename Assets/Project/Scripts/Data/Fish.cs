@@ -21,9 +21,11 @@ namespace LittleTrawling.Data
         [Header("Description")]
         public string description = "New Fish description";
 
-        [Header("Sprite")]
+        [Header("Sprite & Audio")]
         [Tooltip("2D sprite for the fish.")]
         public Sprite sprite;
+        [Tooltip("Optional sound played when this fish is in midair after being caught.")]
+        public AudioClip catchSound;
 
         [Header("Rarity")]
         public FishRarity rarity = FishRarity.Common;

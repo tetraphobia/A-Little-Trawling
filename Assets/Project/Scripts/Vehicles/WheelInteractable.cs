@@ -81,6 +81,8 @@ namespace LittleTrawling.Vehicles
         {
             if (_boatController != null)
             {
+                _boatController.PlayExitSound();
+
                 Dock targetDock = _boatController.CurrentDockZone;
                 if (targetDock == null || !targetDock.IsBoatInside(_boatController))
                 {
@@ -107,9 +109,13 @@ namespace LittleTrawling.Vehicles
             PlayerController player = GetPlayer();
             if (player == null) return;
 
-            if (_boatController != null && _boatController.IsDocked)
+            if (_boatController != null)
             {
-                _boatController.Undock();
+                if (_boatController.IsDocked)
+                {
+                    _boatController.Undock();
+                }
+                _boatController.PlayEnterSound();
             }
 
             if (pilotAnchor != null)

@@ -25,10 +25,31 @@ namespace LittleTrawling.Entities
 
         [Header("Animation")]
         [SerializeField] private Animator animator;
+
+        [Header("Audio SFX")]
+        [Tooltip("Sound played for player footsteps while moving.")]
+        [SerializeField] private AudioClip footstepSound;
+        [Tooltip("Sound played when the player jumps.")]
+        [SerializeField] private AudioClip jumpSound;
+
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
         private static readonly int IsGroundedHash = Animator.StringToHash("IsGrounded");
         private static readonly int IsSprintingHash = Animator.StringToHash("IsSprinting");
         private static readonly int JumpHash = Animator.StringToHash("Jump");
+
+        private float _lastFootstepTime;
+        private AudioSource _sfxAudioSource;
+
+        private void PlaySFX(AudioClip clip)
+        {
+            if (clip == null) return;
+            if (_sfxAudioSource == null)
+            {
+                _sfxAudioSource = gameObject.GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+                _sfxAudioSource.spatialBlend = 0f;
+            }
+            _sfxAudioSource.PlayOneShot(clip);
+        }
 
         public static PlayerController Instance { get; private set; }
 
@@ -132,6 +153,8 @@ namespace LittleTrawling.Entities
                 _verticalVel = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
                 _isGroundedOnDeck = false;
 
+                PlaySFX(jumpSound);
+
                 if (animator != null)
                 {
                     animator.SetTrigger(JumpHash);
@@ -150,6 +173,18 @@ namespace LittleTrawling.Entities
 
             Vector3 finalMove = (moveDir + Vector3.up * _verticalVel) * Time.deltaTime + platformDisplacement;
             _cc.Move(finalMove);
+
+            bool isGrounded = _cc.isGrounded || _isGroundedOnDeck;
+            if (isGrounded && moveDir.sqrMagnitude > 0.05f)
+            {
+                bool isSprinting = InputReader.Instance != null && InputReader.Instance.SprintHeld;
+                float stepInterval = isSprinting ? 0.28f : 0.42f;
+                if (Time.time - _lastFootstepTime > stepInterval)
+                {
+                    _lastFootstepTime = Time.time;
+                    PlaySFX(footstepSound);
+                }
+            }
 
             if (moveDir.sqrMagnitude > 0.001f)
             {

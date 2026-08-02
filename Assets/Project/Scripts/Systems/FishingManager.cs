@@ -38,6 +38,12 @@ namespace LittleTrawling.Systems
         [SerializeField] private int maxFailedBiteChecks = 3;
         [SerializeField] private float biteWindowDuration = 1.5f;
 
+        [Header("Audio SFX")]
+        [Tooltip("Sound played when the bobber lands in the water.")]
+        [SerializeField] private AudioClip bobberWaterLandingSound;
+        [Tooltip("General sound played when a fish is successfully hooked/caught.")]
+        [SerializeField] private AudioClip fishCaughtSuccessSound;
+
         public event System.Action OnFishingStarted;
         public event System.Action<Fish, float, float, int> OnFishCaught;
         public event System.Action OnFishingCompleted;
@@ -438,6 +444,11 @@ namespace LittleTrawling.Systems
             _bobberObject = new GameObject("FishingBobber");
             _bobberObject.transform.position = position;
 
+            if (bobberWaterLandingSound != null)
+            {
+                AudioSource.PlayClipAtPoint(bobberWaterLandingSound, position, 1.0f);
+            }
+
             Debug.Log($"[BobberDebug Spawn] Created FishingBobber at ({position.x:F2}, {position.y:F2}, {position.z:F2}) using shader '{Get3DShader().name}'");
 
             // Red & White Sphere Body
@@ -568,6 +579,11 @@ namespace LittleTrawling.Systems
             DestroyBobber();
             CurrentState = FishingState.Idle;
 
+            if (fishCaughtSuccessSound != null)
+            {
+                AudioSource.PlayClipAtPoint(fishCaughtSuccessSound, bobberPos, 1.0f);
+            }
+
             Fish species = SelectWeightedFishByRodTier();
             float size = species.RollSize();
             float weight = species.RollWeight();
@@ -656,6 +672,17 @@ namespace LittleTrawling.Systems
             float distance = Vector3.Distance(startPos, targetPos);
             float maxArcHeight = Mathf.Clamp(distance * 0.45f, 2.0f, 5.0f);
 
+            AudioSource catchAudio = null;
+            if (species != null && species.catchSound != null)
+            {
+                catchAudio = flyingFish.AddComponent<AudioSource>();
+                catchAudio.clip = species.catchSound;
+                catchAudio.spatialBlend = 0f;
+                catchAudio.volume = 1.0f;
+                catchAudio.pitch = UnityEngine.Random.Range(0.85f, 1.18f);
+                catchAudio.Play();
+            }
+
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
@@ -675,6 +702,11 @@ namespace LittleTrawling.Systems
                 }
 
                 yield return null;
+            }
+
+            if (catchAudio != null && catchAudio.isPlaying)
+            {
+                catchAudio.Stop();
             }
 
             Destroy(flyingFish);

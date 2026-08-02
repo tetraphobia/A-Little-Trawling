@@ -25,10 +25,12 @@ namespace LittleTrawling.Core
         public event Action JumpPressed;
         public event Action InventoryPressed;
         public event Action ClosePressed;
+        public event Action AdvanceDialoguePressed;
 
         private InputAction _fishAction;
         private InputAction _inventoryAction;
         private InputAction _closeAction;
+        private InputAction _advanceDialogueAction;
 
         private void Awake()
         {
@@ -92,6 +94,12 @@ namespace LittleTrawling.Core
                 {
                     _closeAction.performed += OnCloseDown;
                 }
+
+                _advanceDialogueAction = _input.Gameplay.Get().FindAction("AdvanceDialogue");
+                if (_advanceDialogueAction != null)
+                {
+                    _advanceDialogueAction.performed += OnAdvanceDialogueDown;
+                }
             }
             catch (Exception ex)
             {
@@ -141,6 +149,11 @@ namespace LittleTrawling.Core
                     {
                         _closeAction.performed -= OnCloseDown;
                     }
+
+                    if (_advanceDialogueAction != null)
+                    {
+                        _advanceDialogueAction.performed -= OnAdvanceDialogueDown;
+                    }
                 }
                 catch { }
 
@@ -159,6 +172,7 @@ namespace LittleTrawling.Core
         private void OnJumpDown(InputAction.CallbackContext ctx) => JumpPressed?.Invoke();
         private void OnInventoryDown(InputAction.CallbackContext ctx) => InventoryPressed?.Invoke();
         private void OnCloseDown(InputAction.CallbackContext ctx) => ClosePressed?.Invoke();
+        private void OnAdvanceDialogueDown(InputAction.CallbackContext ctx) => AdvanceDialoguePressed?.Invoke();
 
         private void OnFishDown(InputAction.CallbackContext ctx)
         {

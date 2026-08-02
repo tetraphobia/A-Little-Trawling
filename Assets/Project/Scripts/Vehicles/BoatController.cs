@@ -31,12 +31,22 @@ namespace LittleTrawling.Vehicles
         [Tooltip("Distance ahead to check for land obstacles.")]
         [SerializeField] private float landCheckDistance = 0.5f;
 
+        [Header("Audio SFX")]
+        [Tooltip("Sound played when entering the boat.")]
+        [SerializeField] private AudioClip enterBoatSound;
+        [Tooltip("Sound played when exiting the boat.")]
+        [SerializeField] private AudioClip exitBoatSound;
+        [Tooltip("Sound played when accelerating the boat.")]
+        [SerializeField] private AudioClip accelerateSound;
+
         private Rigidbody _rb;
         private bool _piloting;
         private float _currentSpeed;
         private float _currentAngularVelocity;
         private float _baseY;
         private float _currentYaw;
+        private float _lastAccelSoundTime;
+        private AudioSource _audioSource;
 
         public Vector3 ForwardDirection
         {
@@ -213,9 +223,51 @@ namespace LittleTrawling.Vehicles
             return false;
         }
 
+        public void PlayEnterSound()
+        {
+            if (enterBoatSound != null)
+            {
+                EnsureAudioSource();
+                _audioSource.PlayOneShot(enterBoatSound);
+            }
+        }
+
+        public void PlayExitSound()
+        {
+            if (exitBoatSound != null)
+            {
+                EnsureAudioSource();
+                _audioSource.PlayOneShot(exitBoatSound);
+            }
+        }
+
+        public void PlayAccelerateSound()
+        {
+            if (accelerateSound != null && Time.time - _lastAccelSoundTime > 0.45f)
+            {
+                _lastAccelSoundTime = Time.time;
+                EnsureAudioSource();
+                _audioSource.PlayOneShot(accelerateSound);
+            }
+        }
+
+        private void EnsureAudioSource()
+        {
+            if (_audioSource == null)
+            {
+                _audioSource = gameObject.GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+                _audioSource.spatialBlend = 0f;
+            }
+        }
+
         private void FixedUpdate()
         {
             Vector2 input = _piloting && InputReader.Instance != null ? InputReader.Instance.MoveInput : Vector2.zero;
+
+            if (input.y > 0.05f)
+            {
+                PlayAccelerateSound();
+            }
 
             // Steering yaw update
             float targetAngularVel = input.x * TurnSpeed;

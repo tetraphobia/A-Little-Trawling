@@ -21,6 +21,25 @@ namespace LittleTrawling.UI
         [Header("Available Rod Upgrades")]
         [SerializeField] private List<Rod> availableRods = new List<Rod>();
 
+        [Header("Audio SFX")]
+        [Tooltip("Sound played when selling fish.")]
+        [SerializeField] private AudioClip sellFishSound;
+        [Tooltip("Sound played when buying an item upgrade.")]
+        [SerializeField] private AudioClip buyItemSound;
+
+        private AudioSource _audioSource;
+
+        private void PlaySFX(AudioClip clip)
+        {
+            if (clip == null) return;
+            if (_audioSource == null)
+            {
+                _audioSource = gameObject.GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+                _audioSource.spatialBlend = 0f;
+            }
+            _audioSource.PlayOneShot(clip);
+        }
+
         private bool _isOpen;
         private bool _openedThisFrame;
         private Vector2 _scrollPos;
@@ -205,6 +224,7 @@ namespace LittleTrawling.UI
                         Wallet.Instance.AddGold(totalFishValue);
                     }
                     if (invMgr != null) invMgr.ClearInventory();
+                    PlaySFX(sellFishSound);
                 }
             }
             GUILayout.EndHorizontal();
@@ -243,6 +263,7 @@ namespace LittleTrawling.UI
                         if (Wallet.Instance != null && Wallet.Instance.TrySpendGold(eng.cost))
                         {
                             if (boat != null) boat.Engine = eng;
+                            PlaySFX(buyItemSound);
                         }
                     }
                     GUI.enabled = true;
@@ -284,6 +305,7 @@ namespace LittleTrawling.UI
                         if (Wallet.Instance != null && Wallet.Instance.TrySpendGold(rod.cost))
                         {
                             if (player != null) player.Rod = rod;
+                            PlaySFX(buyItemSound);
                         }
                     }
                     GUI.enabled = true;

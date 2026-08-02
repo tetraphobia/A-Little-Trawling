@@ -53,6 +53,7 @@ namespace LittleTrawling.Systems
             if (InputReader.Instance != null)
             {
                 InputReader.Instance.InteractPressed += OnInteractPressed;
+                InputReader.Instance.AdvanceDialoguePressed += OnInteractPressed;
             }
         }
 
@@ -61,6 +62,7 @@ namespace LittleTrawling.Systems
             if (InputReader.Instance != null)
             {
                 InputReader.Instance.InteractPressed -= OnInteractPressed;
+                InputReader.Instance.AdvanceDialoguePressed -= OnInteractPressed;
             }
             if (Instance == this) Instance = null;
         }
