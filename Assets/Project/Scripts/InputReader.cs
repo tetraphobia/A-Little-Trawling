@@ -24,9 +24,11 @@ namespace LittleTrawling.Core
         public event Action InteractPressed;
         public event Action JumpPressed;
         public event Action InventoryPressed;
+        public event Action ClosePressed;
 
         private InputAction _fishAction;
         private InputAction _inventoryAction;
+        private InputAction _closeAction;
 
         private void Awake()
         {
@@ -84,6 +86,12 @@ namespace LittleTrawling.Core
                 {
                     _inventoryAction.performed += OnInventoryDown;
                 }
+
+                _closeAction = _input.Gameplay.Get().FindAction("Close");
+                if (_closeAction != null)
+                {
+                    _closeAction.performed += OnCloseDown;
+                }
             }
             catch (Exception ex)
             {
@@ -128,6 +136,11 @@ namespace LittleTrawling.Core
                     {
                         _inventoryAction.performed -= OnInventoryDown;
                     }
+
+                    if (_closeAction != null)
+                    {
+                        _closeAction.performed -= OnCloseDown;
+                    }
                 }
                 catch { }
 
@@ -145,6 +158,7 @@ namespace LittleTrawling.Core
         private void OnSprintUp(InputAction.CallbackContext ctx) => SprintHeld = false;
         private void OnJumpDown(InputAction.CallbackContext ctx) => JumpPressed?.Invoke();
         private void OnInventoryDown(InputAction.CallbackContext ctx) => InventoryPressed?.Invoke();
+        private void OnCloseDown(InputAction.CallbackContext ctx) => ClosePressed?.Invoke();
 
         private void OnFishDown(InputAction.CallbackContext ctx)
         {

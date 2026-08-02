@@ -37,6 +37,7 @@ namespace LittleTrawling.UI
             if (InputReader.Instance != null)
             {
                 InputReader.Instance.InventoryPressed += ToggleInventory;
+                InputReader.Instance.ClosePressed += OnClosePressed;
             }
         }
 
@@ -45,6 +46,7 @@ namespace LittleTrawling.UI
             if (InputReader.Instance != null)
             {
                 InputReader.Instance.InventoryPressed -= ToggleInventory;
+                InputReader.Instance.ClosePressed -= OnClosePressed;
             }
             if (Instance == this) Instance = null;
         }
@@ -52,6 +54,14 @@ namespace LittleTrawling.UI
         private void ToggleInventory()
         {
             _isOpen = !_isOpen;
+        }
+
+        private void OnClosePressed()
+        {
+            if (_isOpen)
+            {
+                _isOpen = false;
+            }
         }
 
         private void OnGUI()
@@ -75,7 +85,7 @@ namespace LittleTrawling.UI
 
             // Header Section
             Rect headerRect = new Rect(windowRect.x + 15, windowRect.y + 12, windowRect.width - 30, 40);
-            GUI.Label(headerRect, $"<size=20><b>🎒 FISH INVENTORY</b></size> <size=13><color=#aaaaaa>({itemCount} Caught  |  Total Value: <color=yellow>💰 {totalValue} Gold</color>)</color></size>", _headerStyle);
+            GUI.Label(headerRect, $"<size=20><b>FISH INVENTORY</b></size> <size=13><color=#aaaaaa>({itemCount} Caught  |  Total Value: <color=yellow>${totalValue} Gold</color>)</color></size>", _headerStyle);
 
             // Close Button [X]
             Rect closeRect = new Rect(windowRect.x + windowRect.width - 45, windowRect.y + 12, 30, 28);
@@ -137,7 +147,7 @@ namespace LittleTrawling.UI
                 // Sell Price Badge Column (Right Aligned)
                 Rect priceRect = new Rect(cardRect.x + cardRect.width - 110, cardRect.y + 35, 100, 34);
                 GUI.Box(priceRect, "");
-                GUI.Label(priceRect, $"<size=14><color=yellow><b>💰 {item.sellPrice}</b></color></size>", _priceStyle);
+                GUI.Label(priceRect, $"<size=14><color=yellow><b>${item.sellPrice}</b></color></size>", _priceStyle);
             }
 
             GUI.EndScrollView();
@@ -148,17 +158,35 @@ namespace LittleTrawling.UI
             GUI.Box(rect, "");
             if (sprite != null && sprite.texture != null)
             {
+                float targetWidth = 70f;
+                float aspect = sprite.rect.height / Mathf.Max(1f, sprite.rect.width);
+                float targetHeight = targetWidth * aspect;
+
+                if (targetHeight > rect.height - 8f)
+                {
+                    targetHeight = rect.height - 8f;
+                    targetWidth = targetHeight / Mathf.Max(0.01f, aspect);
+                }
+
+                Rect drawRect = new Rect(
+                    rect.x + (rect.width - targetWidth) / 2f,
+                    rect.y + (rect.height - targetHeight) / 2f,
+                    targetWidth,
+                    targetHeight
+                );
+
                 Rect uv = new Rect(
                     sprite.rect.x / sprite.texture.width,
                     sprite.rect.y / sprite.texture.height,
                     sprite.rect.width / sprite.texture.width,
                     sprite.rect.height / sprite.texture.height
                 );
-                GUI.DrawTextureWithTexCoords(rect, sprite.texture, uv);
+
+                GUI.DrawTextureWithTexCoords(drawRect, sprite.texture, uv);
             }
             else
             {
-                GUI.Label(rect, "<size=32>🐟</size>", new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter });
+                GUI.Label(rect, "<size=13><color=#aaaaaa>NO SPRITE</color></size>", new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, richText = true });
             }
         }
 

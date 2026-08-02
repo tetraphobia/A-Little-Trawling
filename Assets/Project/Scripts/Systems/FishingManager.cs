@@ -235,11 +235,6 @@ namespace LittleTrawling.Systems
                 }
             }
 
-            if (isRejected)
-            {
-                Debug.Log($"[WaterCheck RED] pos=({pos.x:F1}, {pos.z:F1}) -> REJECTED: {rejectReason}");
-            }
-
             return !isRejected;
         }
 
@@ -550,12 +545,7 @@ namespace LittleTrawling.Systems
             DestroyBobber();
             CurrentState = FishingState.Idle;
 
-            if (fishPool == null || fishPool.Count == 0)
-            {
-                LoadFishCatalog();
-            }
-
-            Fish species = fishPool[Random.Range(0, fishPool.Count)];
+            Fish species = SelectWeightedFishByRodTier();
             float size = species.RollSize();
             float weight = species.RollWeight();
             float sizeCm = size * 100f;
@@ -563,6 +553,58 @@ namespace LittleTrawling.Systems
             int goldEarned = Mathf.RoundToInt(species.baseValue * (size / Mathf.Max(0.01f, species.minSize)));
 
             StartCoroutine(AnimateFishCatchArc(species, bobberPos, sizeCm, weight, goldEarned));
+        }
+
+        private Fish SelectWeightedFishByRodTier()
+        {
+            if (fishPool == null || fishPool.Count == 0)
+            {
+                LoadFishCatalog();
+            }
+
+            var player = UnityEngine.Object.FindAnyObjectByType<PlayerController>();
+            Rod rod = player != null ? player.Rod : null;
+            int rodTier = (int)(rod != null ? rod.tier : RodTier.Beginner);
+
+            List<Fish> eligible = new List<Fish>();
+            foreach (var f in fishPool)
+            {
+                if (f != null && f.minRodTier <= rodTier)
+                {
+                    eligible.Add(f);
+                }
+            }
+
+            if (eligible.Count == 0)
+            {
+                eligible.AddRange(fishPool);
+            }
+
+            List<float> weights = new List<float>();
+            float totalWeight = 0f;
+
+            foreach (var f in eligible)
+            {
+                int rarityVal = (int)f.rarity;
+                int fishTier = f.minRodTier;
+
+                float w = 1.0f + (rodTier * (fishTier * 3.0f + rarityVal * 2.5f + 1.5f));
+                weights.Add(w);
+                totalWeight += w;
+            }
+
+            float roll = Random.Range(0f, totalWeight);
+            float cumulative = 0f;
+            for (int i = 0; i < eligible.Count; i++)
+            {
+                cumulative += weights[i];
+                if (roll <= cumulative)
+                {
+                    return eligible[i];
+                }
+            }
+
+            return eligible[eligible.Count - 1];
         }
 
         private System.Collections.IEnumerator AnimateFishCatchArc(Fish species, Vector3 startPos, float sizeCm, float weight, int goldEarned)
@@ -613,11 +655,6 @@ namespace LittleTrawling.Systems
             }
 
             Destroy(flyingFish);
-
-            if (Wallet.Instance != null)
-            {
-                Wallet.Instance.AddGold(goldEarned);
-            }
 
             OnFishCaught?.Invoke(species, sizeCm, weight, goldEarned);
             OnFishingCompleted?.Invoke();

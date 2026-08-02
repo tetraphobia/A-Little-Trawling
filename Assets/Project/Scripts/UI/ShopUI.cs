@@ -3,6 +3,7 @@ using UnityEngine;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Entities;
+using LittleTrawling.Systems;
 using LittleTrawling.Vehicles;
 
 namespace LittleTrawling.UI
@@ -93,6 +94,7 @@ namespace LittleTrawling.UI
             if (InputReader.Instance != null)
             {
                 InputReader.Instance.InteractPressed += OnInteractPressed;
+                InputReader.Instance.ClosePressed += OnClosePressed;
             }
         }
 
@@ -102,7 +104,10 @@ namespace LittleTrawling.UI
                 GameManager.Instance.StateChanged -= OnStateChanged;
 
             if (InputReader.Instance != null)
+            {
                 InputReader.Instance.InteractPressed -= OnInteractPressed;
+                InputReader.Instance.ClosePressed -= OnClosePressed;
+            }
 
             if (Instance == this) Instance = null;
         }
@@ -122,6 +127,14 @@ namespace LittleTrawling.UI
         private void LateUpdate()
         {
             _openedThisFrame = false;
+        }
+
+        private void OnClosePressed()
+        {
+            if (_isOpen && !_openedThisFrame)
+            {
+                CloseShop();
+            }
         }
 
         private void OnInteractPressed()
@@ -155,18 +168,51 @@ namespace LittleTrawling.UI
 
             // Header & Gold Balance
             GUILayout.BeginHorizontal();
-            GUILayout.Label("<size=22><b>⚓ BOAT & GEAR UPGRADE SHOP</b></size>", GUILayout.Height(35));
+            GUILayout.Label("<size=22><b>Hey, fisherbird. Wanna buy something?</b></size>", GUILayout.Height(35));
             GUILayout.FlexibleSpace();
             int currentGold = Wallet.Instance != null ? Wallet.Instance.CurrentGold : 0;
-            GUILayout.Label($"<size=18><b>💰 Gold: ${currentGold}</b></size>", GUILayout.Height(35));
+            GUILayout.Label($"<size=18><b>Gold: ${currentGold}</b></size>", GUILayout.Height(35));
             GUILayout.EndHorizontal();
 
             GUILayout.Space(10);
 
             _scrollPos = GUILayout.BeginScrollView(_scrollPos, GUILayout.Height(winHeight - 120));
 
+            // Sell Caught Fish
+            GUILayout.Label("<size=16><b>Sell Caught Fish</b></size>");
+            var invMgr = InventoryManager.Instance;
+            var caughtItems = invMgr != null ? invMgr.Items : null;
+            int caughtCount = caughtItems != null ? caughtItems.Count : 0;
+            int totalFishValue = invMgr != null ? invMgr.CalculateTotalValue() : 0;
+
+            GUILayout.BeginHorizontal("box");
+            if (caughtCount == 0)
+            {
+                GUILayout.Label("<color=#aaaaaa><i>No fish in inventory to sell. Go fishing with [F]!</i></color>");
+                GUILayout.FlexibleSpace();
+                GUI.enabled = false;
+                GUILayout.Button("Sell All Fish ($0)", GUILayout.Width(180), GUILayout.Height(35));
+                GUI.enabled = true;
+            }
+            else
+            {
+                GUILayout.Label($"<b>Inventory: {caughtCount} Fish</b> (Total Value: <color=yellow>${totalFishValue}</color>)");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button($"Sell All Fish (${totalFishValue})", GUILayout.Width(180), GUILayout.Height(35)))
+                {
+                    if (Wallet.Instance != null)
+                    {
+                        Wallet.Instance.AddGold(totalFishValue);
+                    }
+                    if (invMgr != null) invMgr.ClearInventory();
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(15);
+
             // Engines
-            GUILayout.Label("<size=16><b>🚀 Engines</b></size>");
+            GUILayout.Label("<size=16><b>Engines</b></size>");
             var boat = UnityEngine.Object.FindAnyObjectByType<BoatController>();
             Engine currentEngine = boat != null ? boat.Engine : null;
 
@@ -177,7 +223,7 @@ namespace LittleTrawling.UI
                 GUILayout.BeginHorizontal("box");
                 bool isEquipped = (currentEngine == eng);
                 string title = $"<b>{eng.displayName}</b> ({eng.tier} Tier)";
-                string stats = $"Speed: {eng.maxSpeed:F1} m/s | Turn: {eng.turnSpeed:F0}°/s | Accel: {eng.acceleration:F1} m/s²";
+                string stats = $"Speed: {eng.maxSpeed:F1} m/s | Accel: {eng.acceleration:F1} m/s² | Decel: {eng.deceleration:F1} m/s² | Turn: {eng.turnSpeed:F0}°/s";
                 GUILayout.Label($"{title}\n<color=#aaaaaa>{stats}</color>");
 
                 GUILayout.FlexibleSpace();
@@ -207,7 +253,7 @@ namespace LittleTrawling.UI
             GUILayout.Space(15);
 
             // Fishing rods
-            GUILayout.Label("<size=16><b>🎣 Fishing Rods</b></size>");
+            GUILayout.Label("<size=16><b>Fishing Rods</b></size>");
             var player = UnityEngine.Object.FindAnyObjectByType<PlayerController>();
             Rod currentRod = player != null ? player.Rod : null;
 
@@ -217,8 +263,8 @@ namespace LittleTrawling.UI
 
                 GUILayout.BeginHorizontal("box");
                 bool isEquipped = (currentRod == rod);
-                string title = $"<b>{rod.displayName}</b>";
-                string stats = $"Tier: {rod.tier}";
+                string title = $"<b>{rod.displayName}</b> ({rod.tier} Tier)";
+                string stats = $"Unlocks: Tier {(int)rod.tier} Fish Species | High-Tier Catch Rate: +{((int)rod.tier * 30)}%";
                 GUILayout.Label($"{title}\n<color=#aaaaaa>{stats}</color>");
 
                 GUILayout.FlexibleSpace();

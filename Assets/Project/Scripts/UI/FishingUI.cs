@@ -147,7 +147,7 @@ namespace LittleTrawling.UI
                         Rect rect = new Rect((Screen.width - width) / 2f, Screen.height - 180, width, height);
 
                         GUI.Box(rect, "");
-                        GUI.Label(rect, "<size=21><color=yellow><b>⚡ BITE! PRESS [F] NOW! ⚡</b></color></size>", new GUIStyle(GUI.skin.label)
+                        GUI.Label(rect, "<size=21><color=yellow><b>BITE! PRESS [F] NOW!</b></color></size>", new GUIStyle(GUI.skin.label)
                         {
                             alignment = TextAnchor.MiddleCenter,
                             richText = true

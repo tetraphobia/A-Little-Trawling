@@ -2,13 +2,15 @@ using UnityEngine;
 using LittleTrawling.Core;
 using LittleTrawling.Entities;
 using LittleTrawling.Environment;
+using LittleTrawling.Interaction;
 
 namespace LittleTrawling.Vehicles
 {
     /// <summary>
     /// Put this on the ShipWheel object to allow the player to enter/exit boat piloting mode.
+    /// Implements IInteractable for the new InteractionSystem.
     /// </summary>
-    public class WheelInteractable : MonoBehaviour
+    public class WheelInteractable : MonoBehaviour, IInteractable
     {
         [Tooltip("Empty transform where the player stands while steering.")]
         [SerializeField] private Transform pilotAnchor;
@@ -16,60 +18,31 @@ namespace LittleTrawling.Vehicles
         [Tooltip("Tag on the player avatar.")]
         [SerializeField] private string playerTag = "Player";
 
-        [Tooltip("Max distance to interact with the wheel if trigger detection is missed.")]
-        [SerializeField] private float maxInteractDistance = 2.0f;
-
         private PlayerController _player;
         private BoatController _boatController;
-        private bool _playerInRange;
 
         private void Awake()
         {
             _boatController = GetComponentInParent<BoatController>() ?? GetComponent<BoatController>();
-        }
-
-        private void Start()
-        {
-            if (InputReader.Instance != null)
+            
+            // Ensure InteractionTrigger exists on object or children
+            if (GetComponent<InteractionTrigger>() == null && GetComponentInChildren<InteractionTrigger>() == null)
             {
-                InputReader.Instance.InteractPressed += OnInteract;
+                gameObject.AddComponent<InteractionTrigger>();
             }
         }
 
-        private void OnDestroy()
+        public string GetInteractionPrompt()
         {
-            if (InputReader.Instance != null)
+            var gm = GameManager.Instance;
+            if (gm != null && gm.IsState(GameState.Piloting))
             {
-                InputReader.Instance.InteractPressed -= OnInteract;
+                return "Press <color=yellow><b>[E]</b></color> to exit boat";
             }
+            return "Press <color=yellow><b>[E]</b></color> to enter boat";
         }
 
-        private void OnTriggerEnter(Collider other)
-        {
-            if (!other.CompareTag(playerTag)) return;
-            _playerInRange = true;
-            _player = other.GetComponentInParent<PlayerController>() ?? other.GetComponent<PlayerController>();
-        }
-
-        private void OnTriggerExit(Collider other)
-        {
-            if (!other.CompareTag(playerTag)) return;
-            _playerInRange = false;
-        }
-
-        private PlayerController GetPlayer()
-        {
-            if (_player != null) return _player;
-
-            var playerObj = GameObject.FindGameObjectWithTag(playerTag);
-            if (playerObj != null)
-            {
-                _player = playerObj.GetComponentInParent<PlayerController>() ?? playerObj.GetComponent<PlayerController>();
-            }
-            return _player;
-        }
-
-        private void OnInteract()
+        public void Interact()
         {
             var gm = GameManager.Instance;
             if (gm == null) return;
@@ -87,6 +60,18 @@ namespace LittleTrawling.Vehicles
             {
                 TryStartPiloting(gm);
             }
+        }
+
+        private PlayerController GetPlayer()
+        {
+            if (_player != null) return _player;
+
+            var playerObj = GameObject.FindGameObjectWithTag(playerTag);
+            if (playerObj != null)
+            {
+                _player = playerObj.GetComponentInParent<PlayerController>() ?? playerObj.GetComponent<PlayerController>();
+            }
+            return _player;
         }
 
         private void TryStopPiloting(GameManager gm)
@@ -119,27 +104,16 @@ namespace LittleTrawling.Vehicles
             PlayerController player = GetPlayer();
             if (player == null) return;
 
-            bool canInteract = _playerInRange;
-            if (!canInteract)
+            if (_boatController != null && _boatController.IsDocked)
             {
-                Vector3 anchorPos = pilotAnchor != null ? pilotAnchor.position : transform.position;
-                float dist = Vector3.Distance(player.transform.position, anchorPos);
-                canInteract = dist <= maxInteractDistance;
+                _boatController.Undock();
             }
 
-            if (canInteract)
+            if (pilotAnchor != null)
             {
-                if (_boatController != null && _boatController.IsDocked)
-                {
-                    _boatController.Undock();
-                }
-
-                if (pilotAnchor != null)
-                {
-                    player.SnapTo(pilotAnchor);
-                }
-                gm.SetState(GameState.Piloting);
+                player.SnapTo(pilotAnchor);
             }
+            gm.SetState(GameState.Piloting);
         }
 
         private Dock FindDockContainingBoat()

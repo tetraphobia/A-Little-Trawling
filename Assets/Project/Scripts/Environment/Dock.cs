@@ -47,6 +47,27 @@ namespace LittleTrawling.Environment
             }
         }
 
+        private void Start()
+        {
+            HideHitboxVisuals();
+        }
+
+        private void HideHitboxVisuals()
+        {
+            // Only hide MeshRenderer if the collider is a trigger volume or named hitbox/trigger/zone
+            foreach (var col in GetComponentsInChildren<Collider>())
+            {
+                if (col == null) continue;
+
+                string colName = col.name.ToLower();
+                if (col.isTrigger || colName.Contains("hitbox") || colName.Contains("trigger") || colName.Contains("zone"))
+                {
+                    var mr = col.GetComponent<MeshRenderer>();
+                    if (mr != null) mr.enabled = false;
+                }
+            }
+        }
+
         private void OnTriggerEnter(Collider other)
         {
             var boat = other.GetComponentInParent<BoatController>() ?? other.GetComponent<BoatController>();

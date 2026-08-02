@@ -65,6 +65,12 @@ namespace LittleTrawling.Systems
             return removed;
         }
 
+        public void ClearInventory()
+        {
+            items.Clear();
+            OnInventoryChanged?.Invoke();
+        }
+
         public int CalculateTotalValue()
         {
             int total = 0;
