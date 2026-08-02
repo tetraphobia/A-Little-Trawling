@@ -266,36 +266,38 @@ namespace LittleTrawling.Systems
             _previewBobberObject = new GameObject("PreviewFishingBobber");
             _previewBobberObject.transform.position = position;
 
-            Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Legacy Shaders/Diffuse");
-
             var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.name = "PreviewBobberBody";
             sphere.transform.SetParent(_previewBobberObject.transform, false);
-            sphere.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
-            sphere.transform.localPosition = new Vector3(0f, 0.2f, 0f);
+            sphere.transform.localScale = new Vector3(0.45f, 0.45f, 0.45f);
+            sphere.transform.localPosition = new Vector3(0f, 0.25f, 0f);
 
             var col1 = sphere.GetComponent<Collider>();
             if (col1 != null) Destroy(col1);
 
             _previewBodyRenderer = sphere.GetComponent<MeshRenderer>();
-            if (_previewBodyRenderer != null && shader != null)
+            if (_previewBodyRenderer != null)
             {
-                _previewBodyRenderer.material = new Material(shader);
+                _previewBodyRenderer.material = Create3DMaterial(Color.white);
+                _previewBodyRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _previewBodyRenderer.receiveShadows = false;
             }
 
             var ripple = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             ripple.name = "PreviewBobberRipple";
             ripple.transform.SetParent(_previewBobberObject.transform, false);
-            ripple.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+            ripple.transform.localPosition = new Vector3(0f, 0.05f, 0f);
             ripple.transform.localScale = new Vector3(1.4f, 0.005f, 1.4f);
 
             var col2 = ripple.GetComponent<Collider>();
             if (col2 != null) Destroy(col2);
 
             _previewRippleRenderer = ripple.GetComponent<MeshRenderer>();
-            if (_previewRippleRenderer != null && shader != null)
+            if (_previewRippleRenderer != null)
             {
-                _previewRippleRenderer.material = new Material(shader);
+                _previewRippleRenderer.material = Create3DMaterial(Color.white);
+                _previewRippleRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _previewRippleRenderer.receiveShadows = false;
             }
 
             UpdatePreviewBobberColor(isWater);
@@ -410,6 +412,25 @@ namespace LittleTrawling.Systems
             return Vector3.zero;
         }
 
+        private static Shader Get3DShader()
+        {
+            return Shader.Find("Universal Render Pipeline/Unlit")
+                ?? Shader.Find("Unlit/Color")
+                ?? Shader.Find("Standard")
+                ?? Shader.Find("Legacy Shaders/Diffuse")
+                ?? Shader.Find("Sprites/Default");
+        }
+
+        private static Material Create3DMaterial(Color color)
+        {
+            Shader shader = Get3DShader();
+            Material mat = new Material(shader);
+            mat.color = color;
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 1f);
+            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Back);
+            return mat;
+        }
+
         private void SpawnBobber(Vector3 position)
         {
             DestroyBobber();
@@ -417,40 +438,42 @@ namespace LittleTrawling.Systems
             _bobberObject = new GameObject("FishingBobber");
             _bobberObject.transform.position = position;
 
-            Shader shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Legacy Shaders/Diffuse");
+            Debug.Log($"[BobberDebug Spawn] Created FishingBobber at ({position.x:F2}, {position.y:F2}, {position.z:F2}) using shader '{Get3DShader().name}'");
 
             // Red & White Sphere Body
             var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.name = "BobberBody";
             sphere.transform.SetParent(_bobberObject.transform, false);
-            sphere.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
-            sphere.transform.localPosition = new Vector3(0f, 0.2f, 0f);
+            sphere.transform.localScale = new Vector3(0.45f, 0.45f, 0.45f);
+            sphere.transform.localPosition = new Vector3(0f, 0.25f, 0f);
 
             var col1 = sphere.GetComponent<Collider>();
             if (col1 != null) Destroy(col1);
 
             var mr1 = sphere.GetComponent<MeshRenderer>();
-            if (mr1 != null && shader != null)
+            if (mr1 != null)
             {
-                mr1.material = new Material(shader);
-                mr1.material.color = new Color(0.95f, 0.15f, 0.15f, 1.0f);
+                mr1.material = Create3DMaterial(new Color(0.95f, 0.15f, 0.15f, 1.0f));
+                mr1.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                mr1.receiveShadows = false;
             }
 
             // Water Ripple Ring
             var ripple = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             ripple.name = "BobberRipple";
             ripple.transform.SetParent(_bobberObject.transform, false);
-            ripple.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+            ripple.transform.localPosition = new Vector3(0f, 0.05f, 0f);
             ripple.transform.localScale = new Vector3(1.4f, 0.005f, 1.4f);
 
             var col2 = ripple.GetComponent<Collider>();
             if (col2 != null) Destroy(col2);
 
             var mr2 = ripple.GetComponent<MeshRenderer>();
-            if (mr2 != null && shader != null)
+            if (mr2 != null)
             {
-                mr2.material = new Material(shader);
-                mr2.material.color = new Color(0.2f, 0.75f, 0.95f, 0.45f);
+                mr2.material = Create3DMaterial(new Color(0.2f, 0.75f, 0.95f, 0.75f));
+                mr2.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                mr2.receiveShadows = false;
             }
         }
 
