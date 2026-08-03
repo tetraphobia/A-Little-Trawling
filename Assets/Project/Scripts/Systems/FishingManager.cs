@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using LittleTrawling.Audio;
@@ -38,6 +39,10 @@ namespace LittleTrawling.Systems
         [SerializeField] private float biteProbability = 0.5f;
         [SerializeField] private int maxFailedBiteChecks = 3;
         [SerializeField] private float biteWindowDuration = 1.5f;
+
+        [Header("Bobber Settings")]
+        [Tooltip("The 2D sprite used for the fishing bobber.")]
+        [SerializeField] private Sprite bobberSprite;
 
         [Header("Audio SFX")]
         [Tooltip("Sound played while holding [F] to charge cast distance.")]
@@ -120,7 +125,6 @@ namespace LittleTrawling.Systems
             {
                 case FishingState.Charging:
                     _chargeTimer += Time.deltaTime;
-                    UpdatePreviewBobber();
                     break;
 
                 case FishingState.WaitingForBite:
@@ -153,7 +157,6 @@ namespace LittleTrawling.Systems
                     {
                         CurrentState = FishingState.Charging;
                         _chargeTimer = 0f;
-                        UpdatePreviewBobber();
 
                         AudioClip chargeClip = castChargeSound != null ? castChargeSound : ProceduralAudioSynthesizer.GetCastChargeSound();
                         AudioSource.PlayClipAtPoint(chargeClip, transform.position, 1.0f);
@@ -202,7 +205,7 @@ namespace LittleTrawling.Systems
             AudioClip releaseClip = castReleaseSound != null ? castReleaseSound : ProceduralAudioSynthesizer.GetCastReleaseSound();
             AudioSource.PlayClipAtPoint(releaseClip, origin, 1.0f);
 
-            SpawnBobber(_bobberTargetPosition);
+            StartCoroutine(AnimateBobberFlyArcRoutine(origin, _bobberTargetPosition));
 
             var gm = GameManager.Instance;
             if (gm != null)
@@ -467,75 +470,117 @@ namespace LittleTrawling.Systems
             return mat;
         }
 
-        private void SpawnBobber(Vector3 position)
+        private Sprite GetBobberSprite()
+        {
+            if (bobberSprite != null) return bobberSprite;
+
+#if UNITY_EDITOR
+            bobberSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Project/Art/Sprites/Bobber.png");
+            if (bobberSprite != null) return bobberSprite;
+#endif
+
+            bobberSprite = Resources.Load<Sprite>("Sprites/Bobber");
+            return bobberSprite;
+        }
+
+        private bool _isBobberFlyingArc;
+
+        private System.Collections.IEnumerator AnimateBobberFlyArcRoutine(Vector3 startPos, Vector3 targetPos)
+        {
+            _isBobberFlyingArc = true;
+            SpawnBobber(startPos, playLandingSound: false);
+
+            float distance = Vector3.Distance(startPos, targetPos);
+            float duration = Mathf.Clamp(distance * 0.12f, 0.45f, 0.75f);
+            float maxArcHeight = Mathf.Clamp(distance * 0.35f, 1.2f, 3.8f);
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                Vector3 currentPos = Vector3.Lerp(startPos, targetPos, t);
+                float arcY = Mathf.Sin(t * Mathf.PI) * maxArcHeight;
+                currentPos.y += arcY;
+
+                if (_bobberObject != null)
+                {
+                    _bobberObject.transform.position = currentPos;
+                    if (Camera.main != null)
+                    {
+                        _bobberObject.transform.rotation = Camera.main.transform.rotation;
+                    }
+                }
+
+                yield return null;
+            }
+
+            _isBobberFlyingArc = false;
+            if (_bobberObject != null)
+            {
+                _bobberObject.transform.position = targetPos;
+                if (bobberWaterLandingSound != null)
+                {
+                    AudioSource.PlayClipAtPoint(bobberWaterLandingSound, targetPos, 1.0f);
+                }
+            }
+        }
+
+        private void SpawnBobber(Vector3 position, bool playLandingSound = true)
         {
             DestroyBobber();
 
             _bobberObject = new GameObject("FishingBobber");
             _bobberObject.transform.position = position;
 
-            if (bobberWaterLandingSound != null)
+            if (playLandingSound && bobberWaterLandingSound != null)
             {
                 AudioSource.PlayClipAtPoint(bobberWaterLandingSound, position, 1.0f);
             }
 
-            // Red & White Sphere Body
-            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            sphere.name = "BobberBody";
-            sphere.transform.SetParent(_bobberObject.transform, false);
-            sphere.transform.localScale = new Vector3(0.45f, 0.45f, 0.45f);
-            sphere.transform.localPosition = new Vector3(0f, 0.25f, 0f);
+            var spriteObj = new GameObject("BobberSprite");
+            spriteObj.transform.SetParent(_bobberObject.transform, false);
+            spriteObj.transform.localScale = new Vector3(0.55f, 0.55f, 0.55f);
 
-            var col1 = sphere.GetComponent<Collider>();
-            if (col1 != null) Destroy(col1);
-
-            var mr1 = sphere.GetComponent<MeshRenderer>();
-            if (mr1 != null)
+            var sr = spriteObj.AddComponent<SpriteRenderer>();
+            sr.sprite = GetBobberSprite();
+            sr.sortingOrder = 50;
+            if (sr.material != null && sr.material.HasProperty("_Cull"))
             {
-                mr1.material = Create3DMaterial(new Color(0.95f, 0.15f, 0.15f, 1.0f));
-                mr1.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                mr1.receiveShadows = false;
-            }
-
-            // Water Ripple Ring
-            var ripple = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            ripple.name = "BobberRipple";
-            ripple.transform.SetParent(_bobberObject.transform, false);
-            ripple.transform.localPosition = new Vector3(0f, 0.05f, 0f);
-            ripple.transform.localScale = new Vector3(1.4f, 0.005f, 1.4f);
-
-            var col2 = ripple.GetComponent<Collider>();
-            if (col2 != null) Destroy(col2);
-
-            var mr2 = ripple.GetComponent<MeshRenderer>();
-            if (mr2 != null)
-            {
-                mr2.material = Create3DMaterial(new Color(0.2f, 0.75f, 0.95f, 0.75f));
-                mr2.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                mr2.receiveShadows = false;
+                sr.material.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
             }
         }
 
         private void AnimateBobber()
         {
-            if (_bobberObject == null) return;
+            if (_bobberObject == null || _isBobberFlyingArc) return;
 
-            Vector3 pos = _bobberTargetPosition;
+            float waterY = OceanController.Instance != null ? OceanController.Instance.CurrentWaterHeight : 0f;
+            float bobbingOffset = 0f;
+
             if (CurrentState == FishingState.BiteActive)
             {
-                // Tug underwater & rapid splash when biting
-                pos.y = -0.2f + Mathf.Sin(Time.time * 28f) * 0.08f;
+                bobbingOffset = -0.18f + Mathf.Sin(Time.time * 28f) * 0.06f;
             }
             else
             {
-                // Gentle floating wave bobber oscillation
-                pos.y = 0.05f + Mathf.Sin(Time.time * 3.5f) * 0.04f;
+                bobbingOffset = 0.05f + Mathf.Sin(Time.time * 3.5f) * 0.04f;
             }
+
+            Vector3 pos = _bobberTargetPosition;
+            pos.y = waterY + 0.20f + bobbingOffset;
             _bobberObject.transform.position = pos;
+
+            if (Camera.main != null)
+            {
+                _bobberObject.transform.rotation = Camera.main.transform.rotation;
+            }
         }
 
         private void DestroyBobber()
         {
+            _isBobberFlyingArc = false;
             if (_bobberObject != null)
             {
                 Destroy(_bobberObject);
