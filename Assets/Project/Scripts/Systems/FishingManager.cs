@@ -56,6 +56,8 @@ namespace LittleTrawling.Systems
         [SerializeField] private float minCatchPitch = 0.70f;
         [Tooltip("Maximum pitch shift for fish catch audio.")]
         [SerializeField] private float maxCatchPitch = 1.45f;
+        [Tooltip("Volume multiplier for fish catch audio.")]
+        [SerializeField] private float catchAudioVolume = 0.65f;
 
         public event System.Action OnFishingStarted;
         public event System.Action<Fish, float, float, int, LunkerStatus> OnFishCaught;
@@ -778,8 +780,11 @@ namespace LittleTrawling.Systems
             {
                 catchAudio = flyingFish.AddComponent<AudioSource>();
                 catchAudio.clip = species.catchSound;
-                catchAudio.spatialBlend = 0f;
-                catchAudio.volume = 1.0f;
+                catchAudio.spatialBlend = 1.0f; // 3D directional audio emitting from the flying fish
+                catchAudio.minDistance = 1.0f;
+                catchAudio.maxDistance = 50.0f;
+                catchAudio.rolloffMode = AudioRolloffMode.Linear;
+                catchAudio.volume = catchAudioVolume;
                 catchAudio.pitch = Random.Range(minCatchPitch, maxCatchPitch);
                 catchAudio.Play();
             }
@@ -868,6 +873,7 @@ namespace LittleTrawling.Systems
             AudioSource source = tempGO.AddComponent<AudioSource>();
             source.clip = clip;
             source.spatialBlend = 0f;
+            source.volume = catchAudioVolume;
             source.pitch = Random.Range(minCatchPitch, maxCatchPitch);
             source.Play();
             Destroy(tempGO, clip.length / Mathf.Max(0.1f, source.pitch) + 0.1f);
