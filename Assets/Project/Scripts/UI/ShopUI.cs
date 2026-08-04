@@ -386,6 +386,7 @@ namespace LittleTrawling.UI
                         Wallet.Instance.AddGold(totalFishValue);
                     }
                     if (invMgr != null) invMgr.ClearInventory();
+                    sellFishSound = (AudioClip)Resources.Load("sell");
                     PlaySFX(sellFishSound);
                     RebuildShopContent();
                 });
@@ -460,6 +461,7 @@ namespace LittleTrawling.UI
                     {
                         var boat = BoatController.Instance;
                         if (boat != null) boat.Engine = capturedEng;
+                        buyItemSound = (AudioClip)Resources.Load("buy");
                         PlaySFX(buyItemSound);
                         RebuildShopContent();
                     }

@@ -7,6 +7,7 @@ using LittleTrawling.Data;
 using LittleTrawling.Entities;
 using LittleTrawling.Environment;
 using LittleTrawling.Vehicles;
+using Mono.Cecil;
 
 namespace LittleTrawling.Systems
 {
@@ -158,8 +159,10 @@ namespace LittleTrawling.Systems
                         CurrentState = FishingState.Charging;
                         _chargeTimer = 0f;
 
-                        AudioClip chargeClip = castChargeSound != null ? castChargeSound : ProceduralAudioSynthesizer.GetCastChargeSound();
-                        AudioSource.PlayClipAtPoint(chargeClip, transform.position, 1.0f);
+                        // AudioClip chargeClip = castChargeSound != null ? castChargeSound : ProceduralAudioSynthesizer.GetCastChargeSound();
+                        
+                        PlayAudioClip("cast charge");
+                        // AudioSource.PlayClipAtPoint(chargeClip, transform.position, 1.0f);
                     }
                     break;
 
@@ -202,8 +205,10 @@ namespace LittleTrawling.Systems
                 return;
             }
 
-            AudioClip releaseClip = castReleaseSound != null ? castReleaseSound : ProceduralAudioSynthesizer.GetCastReleaseSound();
-            AudioSource.PlayClipAtPoint(releaseClip, origin, 1.0f);
+            // AudioClip releaseClip = castReleaseSound != null ? castReleaseSound : ProceduralAudioSynthesizer.GetCastReleaseSound();
+            // AudioSource.PlayClipAtPoint(releaseClip, origin, 10.0f);
+            PlayAudioClip("cast release");
+           
 
             StartCoroutine(AnimateBobberFlyArcRoutine(origin, _bobberTargetPosition));
 
@@ -377,9 +382,9 @@ namespace LittleTrawling.Systems
                 CurrentState = FishingState.BiteActive;
                 _biteTimer = biteWindowDuration;
 
-                if (fishBiteSound != null && _bobberObject != null)
+                if (_bobberObject != null)
                 {
-                    AudioSource.PlayClipAtPoint(fishBiteSound, _bobberObject.transform.position, 1.0f);
+                    PlayAudioClip("fish bite");
                 }
             }
             else
@@ -390,9 +395,9 @@ namespace LittleTrawling.Systems
 
         private void OnBiteExpired()
         {
-            if (fishEscapedSound != null && _bobberObject != null)
+            if (_bobberObject != null)
             {
-                AudioSource.PlayClipAtPoint(fishEscapedSound, _bobberObject.transform.position, 1.0f);
+                PlayAudioClip("fish escaped");
             }
 
             DestroyBobber();
@@ -520,6 +525,7 @@ namespace LittleTrawling.Systems
             if (_bobberObject != null)
             {
                 _bobberObject.transform.position = targetPos;
+                bobberWaterLandingSound = (AudioClip) Resources.Load("bobber");
                 if (bobberWaterLandingSound != null)
                 {
                     AudioSource.PlayClipAtPoint(bobberWaterLandingSound, targetPos, 1.0f);
@@ -933,5 +939,13 @@ namespace LittleTrawling.Systems
                 mgrObj.AddComponent<FishingManager>();
             }
         }
+
+        private void PlayAudioClip(string path)
+        {
+            AudioClip clip = (AudioClip)Resources.Load(path);
+            AudioSource.PlayClipAtPoint(clip, transform.position, 1.0f);
+        }
     }
+
+    
 }

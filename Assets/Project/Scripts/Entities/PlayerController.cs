@@ -156,7 +156,7 @@ namespace LittleTrawling.Entities
             {
                 _verticalVel = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
                 _isGroundedOnDeck = false;
-
+                jumpSound = (AudioClip)Resources.Load("jump");
                 PlaySFX(jumpSound);
 
                 if (animator != null)
@@ -186,6 +186,7 @@ namespace LittleTrawling.Entities
                 if (Time.time - _lastFootstepTime > stepInterval)
                 {
                     _lastFootstepTime = Time.time;
+                    footstepSound = (AudioClip)Resources.Load("footsteps");
                     PlaySFX(footstepSound);
                 }
             }

@@ -51,7 +51,7 @@ namespace LittleTrawling.Systems
         private IEnumerator CelebrationRoutine(Fish species, LunkerStatus lunkerStatus, string speakerTitle, string[] dialogueLines, Action onComplete)
         {
             var gm = GameManager.Instance;
-
+            firstCatchJingle = (AudioClip)Resources.Load("catch fanfare");
             AudioClip fanfare = lunkerStatus switch
             {
                 LunkerStatus.MegaLunker => megaLunkerFanfare,
