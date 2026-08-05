@@ -7,7 +7,6 @@ using LittleTrawling.Data;
 using LittleTrawling.Entities;
 using LittleTrawling.Environment;
 using LittleTrawling.Vehicles;
-using Mono.Cecil;
 
 namespace LittleTrawling.Systems
 {
