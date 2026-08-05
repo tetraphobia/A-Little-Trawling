@@ -52,6 +52,12 @@ namespace LittleTrawling.Systems
             AddFish(species, sizeCm, weightKg, sellPrice, lunkerStatus);
         }
 
+        public bool HasDiscovered(Fish species)
+        {
+            if (species == null) return false;
+            return _discoveredFishNames.Contains(species.displayName);
+        }
+
         public void AddFish(Fish species, float sizeCm, float weightKg, int sellPrice, LunkerStatus lunkerStatus = LunkerStatus.Normal)
         {
             var caught = new CaughtFish(species, sizeCm, weightKg, sellPrice, lunkerStatus);
@@ -78,18 +84,26 @@ namespace LittleTrawling.Systems
                         _ => "First Catch!"
                     };
 
+                    string baseDesc = !string.IsNullOrEmpty(species.description) ? species.description : "A fine new addition to your fish inventory!";
                     string descText = lunkerStatus switch
                     {
                         LunkerStatus.MegaLunker => "HOLY COW! You hooked a legendary MEGA LUNKER! It's colossal and worth 6x value!",
                         LunkerStatus.Lunker => "WOW! You landed a giant LUNKER! It's 3x size and value!",
-                        _ => !string.IsNullOrEmpty(species.description) ? species.description : "A fine new addition to your fish inventory!"
+                        _ => baseDesc
                     };
 
-                    string[] dialogueLines = new string[]
+                    var linesList = new List<string>
                     {
                         $"Caught a <b>{nameText}</b>!",
                         descText
                     };
+
+                    if (isFirstTime)
+                    {
+                        linesList.Add("Your first time catching this fish has netted you a +50% value bonus!");
+                    }
+
+                    string[] dialogueLines = linesList.ToArray();
 
                     if (FishCatchCelebrationSequence.Instance != null)
                     {
