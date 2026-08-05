@@ -3,6 +3,7 @@ using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Environment;
 using LittleTrawling.Vehicles;
+using LittleTrawling.Audio;
 
 namespace LittleTrawling.Entities
 {
@@ -31,6 +32,9 @@ namespace LittleTrawling.Entities
         [SerializeField] private AudioClip footstepSound;
         [Tooltip("Sound played when the player jumps.")]
         [SerializeField] private AudioClip jumpSound;
+        [Tooltip("Volume multiplier for the player jump grunt sound effect.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float jumpSoundVolume = 0.35f;
 
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
         private static readonly int IsGroundedHash = Animator.StringToHash("IsGrounded");
@@ -40,7 +44,7 @@ namespace LittleTrawling.Entities
         private float _lastFootstepTime;
         private AudioSource _sfxAudioSource;
 
-        private void PlaySFX(AudioClip clip)
+        private void PlaySFX(AudioClip clip, float volumeScale = 1.0f, float minPitch = 1.0f, float maxPitch = 1.0f)
         {
             if (clip == null) return;
             if (_sfxAudioSource == null)
@@ -52,7 +56,17 @@ namespace LittleTrawling.Entities
                 }
                 _sfxAudioSource.spatialBlend = 0f;
             }
-            _sfxAudioSource.PlayOneShot(clip);
+
+            _sfxAudioSource.pitch = (minPitch != 1.0f || maxPitch != 1.0f) ? Random.Range(minPitch, maxPitch) : 1.0f;
+
+            if (VolumeManager.Instance != null)
+            {
+                VolumeManager.Instance.PlayOneShot(_sfxAudioSource, clip, volumeScale, AudioCategory.SFX);
+            }
+            else
+            {
+                _sfxAudioSource.PlayOneShot(clip, volumeScale);
+            }
         }
 
         public static PlayerController Instance { get; private set; }
@@ -157,7 +171,8 @@ namespace LittleTrawling.Entities
                 _verticalVel = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
                 _isGroundedOnDeck = false;
                 jumpSound = (AudioClip)Resources.Load("jump");
-                PlaySFX(jumpSound);
+                float jumpVol = VolumeManager.Instance != null ? VolumeManager.Instance.JumpVolume : jumpSoundVolume;
+                PlaySFX(jumpSound, jumpVol, 0.90f, 1.10f);
 
                 if (animator != null)
                 {
@@ -187,7 +202,8 @@ namespace LittleTrawling.Entities
                 {
                     _lastFootstepTime = Time.time;
                     footstepSound = (AudioClip)Resources.Load("footsteps");
-                    PlaySFX(footstepSound);
+                    float footstepVol = VolumeManager.Instance != null ? VolumeManager.Instance.FootstepVolume : 0.5f;
+                    PlaySFX(footstepSound, footstepVol);
                 }
             }
 

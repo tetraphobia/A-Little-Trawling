@@ -37,7 +37,7 @@ namespace LittleTrawling.UI
 
         private AudioSource _audioSource;
 
-        private void PlaySFX(AudioClip clip)
+        private void PlaySFX(AudioClip clip, float baseVolume = 0.50f)
         {
             if (clip == null) return;
             if (_audioSource == null)
@@ -49,7 +49,15 @@ namespace LittleTrawling.UI
                 }
                 _audioSource.spatialBlend = 0f;
             }
-            _audioSource.PlayOneShot(clip);
+            float vol = VolumeManager.Instance != null ? VolumeManager.Instance.UiSoundVolume : baseVolume;
+            if (VolumeManager.Instance != null)
+            {
+                VolumeManager.Instance.PlayOneShot(_audioSource, clip, vol, AudioCategory.UI);
+            }
+            else
+            {
+                _audioSource.PlayOneShot(clip, vol);
+            }
         }
 
         private bool _isOpen;

@@ -63,7 +63,8 @@ namespace LittleTrawling.Systems
         [Tooltip("Maximum pitch shift for fish catch audio.")]
         [SerializeField] private float maxCatchPitch = 1.45f;
         [Tooltip("Volume multiplier for fish catch audio.")]
-        [SerializeField] private float catchAudioVolume = 0.65f;
+        [Range(0f, 1f)]
+        [SerializeField] private float catchAudioVolume = 0.30f;
 
         public event System.Action OnFishingStarted;
         public event System.Action<Fish, float, float, int, LunkerStatus> OnFishCaught;
@@ -168,8 +169,7 @@ namespace LittleTrawling.Systems
 
                 case FishingState.Charging:
                     // Pressing again while charging cancels cast
-                    DestroyPreviewBobber();
-                    CurrentState = FishingState.Idle;
+                    CancelCast();
                     break;
 
                 case FishingState.WaitingForBite:
@@ -237,6 +237,23 @@ namespace LittleTrawling.Systems
             {
                 gm.SetState(GameState.Walking);
             }
+        }
+
+        public void CancelCast()
+        {
+            if (CurrentState == FishingState.Idle) return;
+
+            DestroyPreviewBobber();
+            DestroyBobber();
+            CurrentState = FishingState.Idle;
+
+            var gm = GameManager.Instance;
+            if (gm != null && gm.IsState(GameState.Fishing))
+            {
+                gm.SetState(GameState.Walking);
+            }
+
+            OnFishingFailed?.Invoke();
         }
 
         public bool IsPositionOnWater(Vector3 pos)
@@ -842,7 +859,8 @@ namespace LittleTrawling.Systems
                 catchAudio.minDistance = 1.0f;
                 catchAudio.maxDistance = 50.0f;
                 catchAudio.rolloffMode = AudioRolloffMode.Linear;
-                catchAudio.volume = catchAudioVolume;
+                float catchVol = VolumeManager.Instance != null ? VolumeManager.Instance.FishCatchVolume : catchAudioVolume;
+                catchAudio.volume = VolumeManager.Instance != null ? VolumeManager.Instance.GetEffectiveVolume(catchVol, AudioCategory.SFX) : catchVol;
                 catchAudio.pitch = Random.Range(minCatchPitch, maxCatchPitch);
                 catchAudio.Play();
             }
@@ -926,15 +944,23 @@ namespace LittleTrawling.Systems
         private void PlayPitchShiftedSFX(AudioClip clip, Vector3 position)
         {
             if (clip == null) return;
-            GameObject tempGO = new GameObject("TempAudio_PitchShifted");
-            tempGO.transform.position = position;
-            AudioSource source = tempGO.AddComponent<AudioSource>();
-            source.clip = clip;
-            source.spatialBlend = 0f;
-            source.volume = catchAudioVolume;
-            source.pitch = Random.Range(minCatchPitch, maxCatchPitch);
-            source.Play();
-            Destroy(tempGO, clip.length / Mathf.Max(0.1f, source.pitch) + 0.1f);
+            float baseVol = VolumeManager.Instance != null ? VolumeManager.Instance.FishCatchVolume : catchAudioVolume;
+            if (VolumeManager.Instance != null)
+            {
+                VolumeManager.Instance.PlayPitchShiftedSFX(clip, position, minCatchPitch, maxCatchPitch, baseVol, AudioCategory.SFX);
+            }
+            else
+            {
+                GameObject tempGO = new GameObject("TempAudio_PitchShifted");
+                tempGO.transform.position = position;
+                AudioSource source = tempGO.AddComponent<AudioSource>();
+                source.clip = clip;
+                source.spatialBlend = 0f;
+                source.volume = baseVol;
+                source.pitch = Random.Range(minCatchPitch, maxCatchPitch);
+                source.Play();
+                Destroy(tempGO, clip.length / Mathf.Max(0.1f, source.pitch) + 0.1f);
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -950,7 +976,16 @@ namespace LittleTrawling.Systems
         private void PlayAudioClip(string path)
         {
             AudioClip clip = (AudioClip)Resources.Load(path);
-            AudioSource.PlayClipAtPoint(clip, transform.position, 1.0f);
+            if (clip == null) return;
+            float castVol = VolumeManager.Instance != null ? VolumeManager.Instance.CastVolume : 0.7f;
+            if (VolumeManager.Instance != null)
+            {
+                VolumeManager.Instance.PlayClipAtPoint(clip, transform.position, castVol, AudioCategory.SFX);
+            }
+            else
+            {
+                AudioSource.PlayClipAtPoint(clip, transform.position, castVol);
+            }
         }
     }
 

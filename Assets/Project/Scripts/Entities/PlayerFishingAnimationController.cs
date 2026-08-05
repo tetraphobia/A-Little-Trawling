@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using LittleTrawling.Core;
 using LittleTrawling.Systems;
 using LittleTrawling.Data;
 
@@ -68,6 +69,8 @@ namespace LittleTrawling.Entities
             {
                 fm.OnFishingStarted += OnCastReleased;
                 fm.OnFishCaught += OnFishCaught;
+                fm.OnFishingFailed += CancelAnimation;
+                fm.OnFishingCompleted += CancelAnimation;
             }
         }
 
@@ -78,6 +81,23 @@ namespace LittleTrawling.Entities
             {
                 fm.OnFishingStarted -= OnCastReleased;
                 fm.OnFishCaught -= OnFishCaught;
+                fm.OnFishingFailed -= CancelAnimation;
+                fm.OnFishingCompleted -= CancelAnimation;
+            }
+        }
+
+        public void CancelAnimation()
+        {
+            if (_activeAnimCoroutine != null)
+            {
+                StopCoroutine(_activeAnimCoroutine);
+                _activeAnimCoroutine = null;
+            }
+            _isPlayingCustomSequence = false;
+            _isPlayingCustomFishingAnim = false;
+            if (_animator != null && !_animator.enabled)
+            {
+                _animator.enabled = true;
             }
         }
 
@@ -86,7 +106,26 @@ namespace LittleTrawling.Entities
             var fm = FishingManager.Instance;
             if (fm == null) return;
 
-            // If a throw (frames 80-256) or catch (frames 300-360) sequence is playing, let it run in full!
+            // Check if player is giving movement input to cancel early
+            bool hasMoveInput = InputReader.Instance != null && InputReader.Instance.MoveInput.sqrMagnitude > 0.01f;
+
+            if (hasMoveInput && fm.CurrentState != FishingState.Idle)
+            {
+                fm.CancelCast();
+                CancelAnimation();
+                return;
+            }
+
+            if (fm.CurrentState == FishingState.Idle)
+            {
+                if (_isPlayingCustomSequence || _isPlayingCustomFishingAnim)
+                {
+                    CancelAnimation();
+                }
+                return;
+            }
+
+            // If a throw (frames 80-256) or catch (frames 300-360) sequence is playing, let it run!
             if (_isPlayingCustomSequence) return;
 
             // 1. Charge rod: frames 0 to 50 of PlayerFishingCast

@@ -113,7 +113,16 @@ namespace LittleTrawling.UI
                 btn.onClick.AddListener(() =>
                 {
                     AudioClip clip = choiceSelectSound != null ? choiceSelectSound : ProceduralAudioSynthesizer.GetChoiceSelectSound();
-                    AudioSource.PlayClipAtPoint(clip, Camera.main != null ? Camera.main.transform.position : transform.position, 1.0f);
+                    Vector3 pos = Camera.main != null ? Camera.main.transform.position : transform.position;
+                    float uiVol = VolumeManager.Instance != null ? VolumeManager.Instance.UiSoundVolume : 0.5f;
+                    if (VolumeManager.Instance != null)
+                    {
+                        VolumeManager.Instance.PlayClipAtPoint(clip, pos, uiVol, AudioCategory.UI);
+                    }
+                    else
+                    {
+                        AudioSource.PlayClipAtPoint(clip, pos, uiVol);
+                    }
                     HideChoices();
                     capturedChoice.onSelect?.Invoke();
                 });

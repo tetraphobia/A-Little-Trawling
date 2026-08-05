@@ -1,4 +1,5 @@
 using UnityEngine;
+using LittleTrawling.Audio;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.Environment;
@@ -228,12 +229,26 @@ namespace LittleTrawling.Vehicles
             return false;
         }
 
+        private void PlayBoatSFX(AudioClip clip)
+        {
+            if (clip == null) return;
+            EnsureAudioSource();
+            float boatVol = VolumeManager.Instance != null ? VolumeManager.Instance.BoatVolume : 0.6f;
+            if (VolumeManager.Instance != null)
+            {
+                VolumeManager.Instance.PlayOneShot(_audioSource, clip, boatVol, AudioCategory.SFX);
+            }
+            else
+            {
+                _audioSource.PlayOneShot(clip, boatVol);
+            }
+        }
+
         public void PlayEnterSound()
         {
             if (enterBoatSound != null)
             {
-                EnsureAudioSource();
-                _audioSource.PlayOneShot(enterBoatSound);
+                PlayBoatSFX(enterBoatSound);
             }
         }
 
@@ -241,8 +256,7 @@ namespace LittleTrawling.Vehicles
         {
             if (exitBoatSound != null)
             {
-                EnsureAudioSource();
-                _audioSource.PlayOneShot(exitBoatSound);
+                PlayBoatSFX(exitBoatSound);
             }
         }
 
@@ -251,8 +265,7 @@ namespace LittleTrawling.Vehicles
             if (accelerateSound != null && Time.time - _lastAccelSoundTime > 0.45f)
             {
                 _lastAccelSoundTime = Time.time;
-                EnsureAudioSource();
-                _audioSource.PlayOneShot(accelerateSound);
+                PlayBoatSFX(accelerateSound);
             }
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using LittleTrawling.Audio;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 using LittleTrawling.UI;
@@ -25,6 +26,9 @@ namespace LittleTrawling.Systems
         [SerializeField] private AudioClip lunkerFanfare;
         [Tooltip("Fanfare played when landing a MEGA LUNKER! (6x size & value).")]
         [SerializeField] private AudioClip megaLunkerFanfare;
+        [Tooltip("Volume multiplier for catch celebration fanfare audio.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float fanfareVolume = 0.35f;
 
         private GameObject _activePresentedFish;
 
@@ -51,19 +55,27 @@ namespace LittleTrawling.Systems
         private IEnumerator CelebrationRoutine(Fish species, LunkerStatus lunkerStatus, string speakerTitle, string[] dialogueLines, Action onComplete)
         {
             var gm = GameManager.Instance;
-            firstCatchJingle = (AudioClip)Resources.Load("catch fanfare");
+            if (gm != null) gm.SetState(GameState.Dialogue);
+
+            AudioClip gameBonusClip = null;
+#if UNITY_EDITOR
+            gameBonusClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/ThirdParty/Pixabay/GameBonus.mp3");
+#endif
+            if (gameBonusClip != null)
+            {
+                firstCatchJingle = gameBonusClip;
+            }
+            else if (firstCatchJingle == null)
+            {
+                firstCatchJingle = (AudioClip)Resources.Load("catch fanfare");
+            }
+
             AudioClip fanfare = lunkerStatus switch
             {
-                LunkerStatus.MegaLunker => megaLunkerFanfare,
-                LunkerStatus.Lunker => lunkerFanfare,
+                LunkerStatus.MegaLunker => megaLunkerFanfare != null ? megaLunkerFanfare : firstCatchJingle,
+                LunkerStatus.Lunker => lunkerFanfare != null ? lunkerFanfare : firstCatchJingle,
                 _ => firstCatchJingle
             };
-
-            if (fanfare != null)
-            {
-                AudioSource.PlayClipAtPoint(fanfare, Camera.main != null ? Camera.main.transform.position : transform.position, 1.0f);
-            }
-            if (gm != null) gm.SetState(GameState.Dialogue);
 
             Transform playerT = null;
             var playerObj = GameObject.FindWithTag("Player");
@@ -100,6 +112,21 @@ namespace LittleTrawling.Systems
             }
 
             yield return new WaitForSeconds(0.35f);
+
+            // Play celebration fanfare once dialogue starts!
+            if (fanfare != null)
+            {
+                float baseVol = VolumeManager.Instance != null ? VolumeManager.Instance.CelebrationFanfareVolume : fanfareVolume;
+                Vector3 pos = Camera.main != null ? Camera.main.transform.position : transform.position;
+                if (VolumeManager.Instance != null)
+                {
+                    VolumeManager.Instance.PlayClipAtPoint(fanfare, pos, baseVol, AudioCategory.SFX);
+                }
+                else
+                {
+                    AudioSource.PlayClipAtPoint(fanfare, pos, baseVol);
+                }
+            }
 
             if (DialogueManager.Instance != null)
             {

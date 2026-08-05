@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using LittleTrawling.Audio;
 using LittleTrawling.Core;
 using LittleTrawling.Data;
 
@@ -247,7 +248,15 @@ namespace LittleTrawling.Systems
 
             int clipIndex = UnityEngine.Random.Range(0, _blipClips.Length);
             _audioSource.pitch = UnityEngine.Random.Range(0.92f, 1.08f);
-            _audioSource.PlayOneShot(_blipClips[clipIndex]);
+            float baseVol = VolumeManager.Instance != null ? VolumeManager.Instance.DialogueBlipVolume : 0.35f;
+            if (VolumeManager.Instance != null)
+            {
+                VolumeManager.Instance.PlayOneShot(_audioSource, _blipClips[clipIndex], baseVol, AudioCategory.UI);
+            }
+            else
+            {
+                _audioSource.PlayOneShot(_blipClips[clipIndex], baseVol);
+            }
         }
 
         private static AudioClip GenerateBlipClip(float frequency)
