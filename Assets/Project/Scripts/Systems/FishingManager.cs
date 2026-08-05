@@ -677,6 +677,13 @@ namespace LittleTrawling.Systems
 
             int goldEarned = Mathf.RoundToInt(species.baseValue * (size / Mathf.Max(0.01f, species.minSize)));
 
+            bool isFirstCatch = InventoryManager.Instance != null && !InventoryManager.Instance.HasDiscovered(species);
+            if (isFirstCatch)
+            {
+                int firstCatchBonus = Mathf.Max(15, Mathf.RoundToInt(goldEarned * 0.5f));
+                goldEarned += firstCatchBonus;
+            }
+
             LunkerStatus lunkerStatus = LunkerStatus.Normal;
             float lunkerRoll = Random.value;
             if (lunkerRoll <= 0.01f)
