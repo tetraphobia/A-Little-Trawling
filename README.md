@@ -8,8 +8,6 @@ Liam M.
 ### Sound Design
 Jacob T.
 Liam M.
-### Music
-Liam M.
 ### Models
 Jacob T.
 ### Textures
