@@ -57,10 +57,7 @@ namespace LittleTrawling.Systems
             var gm = GameManager.Instance;
             if (gm != null) gm.SetState(GameState.Dialogue);
 
-            AudioClip gameBonusClip = null;
-#if UNITY_EDITOR
-            gameBonusClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/ThirdParty/Pixabay/GameBonus.mp3");
-#endif
+            AudioClip gameBonusClip = Resources.Load<AudioClip>("ThirdParty/GameBonus");
             if (gameBonusClip != null)
             {
                 firstCatchJingle = gameBonusClip;

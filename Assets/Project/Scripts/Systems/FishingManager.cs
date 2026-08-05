@@ -495,11 +495,6 @@ namespace LittleTrawling.Systems
         {
             if (bobberSprite != null) return bobberSprite;
 
-#if UNITY_EDITOR
-            bobberSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Project/Art/Sprites/Bobber.png");
-            if (bobberSprite != null) return bobberSprite;
-#endif
-
             bobberSprite = Resources.Load<Sprite>("Sprites/Bobber");
             return bobberSprite;
         }
@@ -615,21 +610,17 @@ namespace LittleTrawling.Systems
             if (fishPool == null) fishPool = new List<Fish>();
             fishPool.Clear();
 
-#if UNITY_EDITOR
-            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:Fish");
-            foreach (string guid in guids)
+            var loaded = Resources.LoadAll<Fish>("Data/Fish");
+            if (loaded != null)
             {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                var f = UnityEditor.AssetDatabase.LoadAssetAtPath<Fish>(path);
-                if (f != null && !fishPool.Contains(f))
+                foreach (var f in loaded)
                 {
-                    fishPool.Add(f);
+                    if (f != null && !fishPool.Contains(f))
+                    {
+                        fishPool.Add(f);
+                    }
                 }
             }
-#else
-            var loaded = Resources.FindObjectsOfTypeAll<Fish>();
-            if (loaded != null) fishPool.AddRange(loaded);
-#endif
 
             if (fishPool.Count == 0)
             {

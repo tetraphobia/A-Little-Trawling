@@ -278,10 +278,7 @@ namespace LittleTrawling.Environment
 
                 if (skyDomeObj == null)
                 {
-                    GameObject prefab = null;
-#if UNITY_EDITOR
-                    prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ThirdParty/SimpleSky/Prefabs/SkyDome.prefab");
-#endif
+                    GameObject prefab = Resources.Load<GameObject>("ThirdParty/SkyDome");
                     if (prefab != null)
                     {
                         skyDomeObj = Object.Instantiate(prefab);

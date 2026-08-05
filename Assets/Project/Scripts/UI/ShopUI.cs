@@ -88,37 +88,11 @@ namespace LittleTrawling.UI
             availableEngines.Clear();
             availableRods.Clear();
 
-#if UNITY_EDITOR
-            // Search all Engine assets in Data subdirectories
-            string[] engineGuids = UnityEditor.AssetDatabase.FindAssets("t:Engine");
-            foreach (string guid in engineGuids)
-            {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                var eng = UnityEditor.AssetDatabase.LoadAssetAtPath<Engine>(path);
-                if (eng != null && !availableEngines.Contains(eng))
-                {
-                    availableEngines.Add(eng);
-                }
-            }
-
-            // Search all Rod assets in Data subdirectories
-            string[] rodGuids = UnityEditor.AssetDatabase.FindAssets("t:Rod");
-            foreach (string guid in rodGuids)
-            {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                var rod = UnityEditor.AssetDatabase.LoadAssetAtPath<Rod>(path);
-                if (rod != null && !availableRods.Contains(rod))
-                {
-                    availableRods.Add(rod);
-                }
-            }
-#else
-            var engines = Resources.FindObjectsOfTypeAll<Engine>();
+            var engines = Resources.LoadAll<Engine>("Data/Engines");
             if (engines != null) availableEngines.AddRange(engines);
 
-            var rods = Resources.FindObjectsOfTypeAll<Rod>();
+            var rods = Resources.LoadAll<Rod>("Data/Rods");
             if (rods != null) availableRods.AddRange(rods);
-#endif
 
             // Sort catalog items by cost
             availableEngines.Sort((a, b) => a.cost.CompareTo(b.cost));

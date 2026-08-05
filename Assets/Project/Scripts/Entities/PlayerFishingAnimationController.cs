@@ -50,16 +50,14 @@ namespace LittleTrawling.Entities
 
         private void LoadClipsIfNull()
         {
-#if UNITY_EDITOR
             if (fishingCastClip == null)
             {
-                fishingCastClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Project/Art/Models/Player/PlayerFishingCast.anim");
+                fishingCastClip = Resources.Load<AnimationClip>("Animations/PlayerFishingCast");
             }
             if (fishingIdleClip == null)
             {
-                fishingIdleClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Project/Art/Models/Player/PlayerFishingIdle.anim");
+                fishingIdleClip = Resources.Load<AnimationClip>("Animations/PlayerFishingIdle");
             }
-#endif
         }
 
         private void Start()

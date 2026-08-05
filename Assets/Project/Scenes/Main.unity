@@ -33847,9 +33847,9 @@ MonoBehaviour:
   playerTarget: {fileID: 932030793}
   boatTarget: {fileID: 44499064}
   walkingDistance: 8
-  walkingOffset: {x: 0, y: 0, z: 0}
+  walkingOffset: {x: 0, y: 2, z: 0}
   pilotingDistance: 15
-  pilotingOffset: {x: 0, y: 1, z: 0}
+  pilotingOffset: {x: 0, y: 3, z: 0}
   mouseSensitivity: 0.25
   minPitch: -20
   maxPitch: 80
