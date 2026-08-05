@@ -637,7 +637,7 @@ namespace LittleTrawling.Systems
             trout.maxSize = 0.7f;
             trout.minWeight = 0.5f;
             trout.maxWeight = 2.5f;
-            trout.baseValue = 20;
+            trout.baseValue = 25;
 
             var salmon = ScriptableObject.CreateInstance<Fish>();
             salmon.displayName = "Atlantic Salmon";
@@ -646,7 +646,7 @@ namespace LittleTrawling.Systems
             salmon.maxSize = 1.1f;
             salmon.minWeight = 2.0f;
             salmon.maxWeight = 6.0f;
-            salmon.baseValue = 35;
+            salmon.baseValue = 44;
 
             var bass = ScriptableObject.CreateInstance<Fish>();
             bass.displayName = "Largemouth Bass";
@@ -655,7 +655,7 @@ namespace LittleTrawling.Systems
             bass.maxSize = 0.6f;
             bass.minWeight = 0.4f;
             bass.maxWeight = 2.0f;
-            bass.baseValue = 15;
+            bass.baseValue = 19;
 
             var tuna = ScriptableObject.CreateInstance<Fish>();
             tuna.displayName = "Bluefin Tuna";
@@ -664,7 +664,7 @@ namespace LittleTrawling.Systems
             tuna.maxSize = 1.8f;
             tuna.minWeight = 5.0f;
             tuna.maxWeight = 15.0f;
-            tuna.baseValue = 80;
+            tuna.baseValue = 100;
 
             fishPool.Add(trout);
             fishPool.Add(salmon);
@@ -750,10 +750,10 @@ namespace LittleTrawling.Systems
 
         private static int GetMaxTierForDepth(float depth)
         {
-            if (depth < 3.0f) return 0;
-            if (depth < 7.0f) return 1;
-            if (depth < 12.0f) return 2;
-            return 3;
+            if (depth < 1.5f) return 0; // Shallow dock/shore
+            if (depth < 4.0f) return 1; // Near-shore ocean
+            if (depth < 8.0f) return 2; // Deep water
+            return 3;                   // Abyssal ocean (8m+)
         }
 
         private Fish SelectWeightedFishByRodTier(Vector3 castPos)
@@ -768,16 +768,21 @@ namespace LittleTrawling.Systems
             int rodTier = Mathf.Clamp((int)(rod != null ? rod.tier : RodTier.Tier0), 0, 3);
 
             float depth = GetWaterDepthAt(castPos);
-            int depthMaxTier = GetMaxTierForDepth(depth);
-            int effectiveMaxTier = Mathf.Min(rodTier, depthMaxTier);
+            int depthTier = GetMaxTierForDepth(depth);
 
-            float[] probs = GetFishTierProbabilities(effectiveMaxTier);
+            float[] probs = GetFishTierProbabilitiesForDepthAndRod(depthTier, rodTier);
 
-            float roll = Random.value;
+            float totalWeight = 0f;
+            for (int t = 0; t <= depthTier; t++)
+            {
+                totalWeight += probs[t];
+            }
+
+            float roll = Random.Range(0f, totalWeight);
             float cumulative = 0f;
             int targetTier = 0;
 
-            for (int t = 0; t <= effectiveMaxTier; t++)
+            for (int t = 0; t <= depthTier; t++)
             {
                 cumulative += probs[t];
                 if (roll <= cumulative)
@@ -791,7 +796,7 @@ namespace LittleTrawling.Systems
 
             if (eligible.Count == 0)
             {
-                eligible = fishPool.FindAll(f => f != null && (int)f.tier <= effectiveMaxTier);
+                eligible = fishPool.FindAll(f => f != null && (int)f.tier <= depthTier);
             }
             if (eligible.Count == 0)
             {
@@ -802,16 +807,25 @@ namespace LittleTrawling.Systems
             return eligible[randomIndex];
         }
 
-        private static float[] GetFishTierProbabilities(int rodTier)
+        private static float[] GetFishTierProbabilitiesForDepthAndRod(int depthTier, int rodTier)
         {
-            return rodTier switch
+            float[] probs = depthTier switch
             {
-                0 => new float[] { 0.70f, 0.20f, 0.09f, 0.01f },
-                1 => new float[] { 0.35f, 0.45f, 0.15f, 0.05f },
-                2 => new float[] { 0.15f, 0.35f, 0.38f, 0.12f },
-                3 => new float[] { 0.05f, 0.20f, 0.50f, 0.25f },
-                _ => new float[] { 0.70f, 0.20f, 0.09f, 0.01f }
+                0 => new float[] { 1.00f, 0.00f, 0.00f, 0.00f },
+                1 => new float[] { 0.25f, 0.75f, 0.00f, 0.00f },
+                2 => new float[] { 0.05f, 0.25f, 0.70f, 0.00f },
+                3 => new float[] { 0.02f, 0.08f, 0.40f, 0.50f },
+                _ => new float[] { 1.00f, 0.00f, 0.00f, 0.00f }
             };
+
+            if (rodTier > 0 && depthTier > 0)
+            {
+                float bonus = rodTier * 0.10f;
+                probs[depthTier] += bonus;
+                probs[0] = Mathf.Max(0.01f, probs[0] - bonus);
+            }
+
+            return probs;
         }
 
         private System.Collections.IEnumerator AnimateFishCatchArc(Fish species, Vector3 startPos, float sizeCm, float weight, int goldEarned, LunkerStatus lunkerStatus = LunkerStatus.Normal)

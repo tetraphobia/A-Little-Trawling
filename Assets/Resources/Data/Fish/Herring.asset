@@ -22,4 +22,4 @@ MonoBehaviour:
   maxSize: 0.35
   minWeight: 0.15
   maxWeight: 0.8
-  baseValue: 9
+  baseValue: 11

@@ -22,4 +22,4 @@ MonoBehaviour:
   maxSize: 2.0
   minWeight: 45.0
   maxWeight: 110.0
-  baseValue: 500
+  baseValue: 625

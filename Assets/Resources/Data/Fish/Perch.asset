@@ -22,5 +22,5 @@ MonoBehaviour:
   maxSize: 0.6
   minWeight: 0.12
   maxWeight: 3.2
-  baseValue: 10
+  baseValue: 13
   tier: 0
