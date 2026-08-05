@@ -11,7 +11,7 @@ namespace LittleTrawling.Core
         public static Wallet Instance { get; private set; }
 
         [Header("Starting Balance")]
-        [SerializeField] private int startingGold = 999999;
+        [SerializeField] private int startingGold = 0;
 
         public int CurrentGold { get; private set; }
 

@@ -963,7 +963,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4058852915679833821, guid: 5711051c0a805bb449ceab7500bb34ca, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2088333023}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5711051c0a805bb449ceab7500bb34ca, type: 3}
       insertIndex: 1
@@ -32115,7 +32118,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 56f4e9b0e400c9047bf724c3dfc23bb7, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.047
+  m_Volume: 0.154
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -32250,6 +32253,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 44499064}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!4 &581370876 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4058852915679833821, guid: 5711051c0a805bb449ceab7500bb34ca, type: 3}
+  m_PrefabInstance: {fileID: 334697560}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &610501327
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -32779,6 +32787,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Entities.PlayerController
   rod: {fileID: 11400000, guid: 5c92d22e949e2fd40b6d013b5434026b, type: 2}
+  rodGameObject: {fileID: 0}
   moveSpeed: 2
   sprintSpeed: 4
   jumpHeight: 1.2
@@ -32787,6 +32796,7 @@ MonoBehaviour:
   animator: {fileID: 932030794}
   footstepSound: {fileID: 0}
   jumpSound: {fileID: 0}
+  jumpSoundVolume: 0.35
 --- !u!143 &932030796
 CharacterController:
   m_ObjectHideFlags: 0
@@ -33866,6 +33876,7 @@ GameObject:
   - component: {fileID: 1653193274}
   - component: {fileID: 1653193273}
   - component: {fileID: 1653193276}
+  - component: {fileID: 1653193277}
   m_Layer: 0
   m_Name: Systems
   m_TagString: Untagged
@@ -33913,6 +33924,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Core.GameManager
   startingState: 0
+--- !u!114 &1653193277
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1653193272}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fc24066c562db6499258adc42e79ebf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Audio.VolumeManager
+  masterVolume: 1
+  sfxVolume: 1
+  uiVolume: 1
+  jumpVolume: 0.158
+  footstepVolume: 0.535
+  fishCatchVolume: 0.253
+  celebrationFanfareVolume: 0.35
+  castVolume: 0
+  dialogueBlipVolume: 0.35
+  uiSoundVolume: 0.5
+  boatVolume: 0.6
 --- !u!4 &1663801185 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: c2391e8a6bdf5424194b61e41952a40a, type: 3}
@@ -34366,6 +34400,80 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8194a20b7c3d4e5f678901234567890, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LittleTrawling.Environment.OceanController
+--- !u!1001 &2076515285
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 581370876}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.5519473
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.5519476
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.55194765
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.00225
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.00056
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.00128
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.501403
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.44879487
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.31282964
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.6703103
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 15.964
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -9.184
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 237.314
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+      propertyPath: m_Name
+      value: FishingRod
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+--- !u!4 &2088333023 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 3898d3e3867114e44b1728433cce8073, type: 3}
+  m_PrefabInstance: {fileID: 2076515285}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &2104413781 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 420bde364644a314396dc8ed24ee99d6, type: 3}

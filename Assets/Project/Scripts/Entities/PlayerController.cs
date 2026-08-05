@@ -16,6 +16,14 @@ namespace LittleTrawling.Entities
         [Header("Equipment")]
         [Tooltip("The equipped fishing rod.")]
         [SerializeField] private Rod rod;
+        [Tooltip("The 3D fishing rod GameObject held in the player's hand.")]
+        [SerializeField] private GameObject rodGameObject;
+
+        public GameObject RodGameObject
+        {
+            get => rodGameObject;
+            set => rodGameObject = value;
+        }
 
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 3.5f;
@@ -181,8 +189,44 @@ namespace LittleTrawling.Entities
             }
         }
 
+        private void UpdateRodVisibility()
+        {
+            if (rodGameObject == null)
+            {
+                Transform rodChild = transform.Find("FishingRod") ?? transform.Find("Rod");
+                if (rodChild == null)
+                {
+                    foreach (Transform t in GetComponentsInChildren<Transform>(true))
+                    {
+                        if (t != transform && t.name.ToLower().Contains("rod"))
+                        {
+                            rodChild = t;
+                            break;
+                        }
+                    }
+                }
+                if (rodChild != null)
+                {
+                    rodGameObject = rodChild.gameObject;
+                }
+            }
+
+            if (rodGameObject == null) return;
+
+            var gm = GameManager.Instance;
+            var fm = LittleTrawling.Systems.FishingManager.Instance;
+            bool isFishingState = (gm != null && gm.IsState(GameState.Fishing)) || (fm != null && fm.CurrentState != LittleTrawling.Systems.FishingState.Idle);
+
+            if (rodGameObject.activeSelf != isFishingState)
+            {
+                rodGameObject.SetActive(isFishingState);
+            }
+        }
+
         private void Update()
         {
+            UpdateRodVisibility();
+
             if (!_active || InputReader.Instance == null) return;
 
             Vector3 platformDisplacement = CalculatePlatformDisplacement();
